@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OneGit</string>
+    <string name="sign_in_widget">Sign in to see your stats</string>
+    <string name="profile_widget_desc">Your GitHub profile stats and avatar, always on your home screen</string>
+    <string name="quick_widget_desc">Quick launch into Home, Repos, Issues and Alerts</string>
+    <string name="contrib_small_desc">Your GitHub contribution graph, compact (2x2)</string>
+    <string name="contrib_big_desc">Full GitHub contribution graph with stats (4x4)</string>
+    <string name="contrib_wide_desc">GitHub contribution graph with stats (4x2)</string>
+    <string name="heat_desc">GitHub contribution heatmap</string>
+</resources>
