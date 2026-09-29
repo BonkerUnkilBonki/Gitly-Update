@@ -1,304 +1,222 @@
-OneGit — GitHub Client for Android
+# OneGit — a One UI-inspired GitHub client for Android
 
-OneGit is a lightweight GitHub client for Android with a Samsung One UI-inspired interface. It combines GitHub repository management, issues, pull requests, releases, notifications, profile features, widgets, customization, and full repository editing in a rounded One UI-style design.
+## What's new in v2.4 — full repo editing
+- Upload files: any repo's Files tab has an Upload files button that
+  opens the Android file picker (multi-select) and commits each file
+  straight to the repo
+- Edit file: tap a file in the Files tab, then Edit — make changes in
+  the editor, write a commit message, and commit
+- Delete file: same viewer, Delete button, with confirmation
+- New release: the Releases page has a New release button — tag,
+  title, description, Final / Pre-release / Draft
+- Upload release assets: every release card has an Upload asset
+  button that uploads any file from your device to that release
+  (APKs, zips, anything)
+- Edit repository: repos you can push to show an Edit repository
+  button on the repo page — description, homepage and
+  public/private visibility
 
-Core Interface & Design
+## What's new in v2.3 — new app font
+- The entire app now uses the bundled Google Sans Flex font (shown in
+  your screenshot request) for every screen, card, button and label
+- Font is embedded in the APK, works fully offline
+- The old Font setting (System / App default) was removed since the
+  app font is now always the bundled one; code blocks, diffs and file
+  views intentionally stay monospace for readability
 
-- Samsung One UI-inspired interface with:
-  - Large collapsing titles
-  - Floating pill-shaped bottom navigation
-  - Rounded cards and controls
-  - Segmented controls and pill buttons
-  - Dark and AMOLED-friendly themes
-  - Smooth animations and press feedback
-  - Optional neon glow effects
-- OneGit uses the bundled Google Sans Flex font throughout the interface.
-- Code blocks, diffs, and file views use monospace fonts for readability.
-- Status and navigation bars follow the selected theme.
-- Supports light, dark, and pitch-black AMOLED themes.
-- Multiple accent colors plus:
-  - Custom accent color with color picker and hex input
-  - Dynamic Material You color on Android 12+
-- Glow effects can be enabled or disabled for a flatter, more battery-friendly appearance.
-- Bottom navigation automatically hides while scrolling and returns on interaction.
+## What's new in v2.2
+- Removed the "Your GitHub, the One UI way" tagline from the home header
+- Auto-sync on open: OneGit quietly restores your synced preferences
+  from your private Gist in the background every time the app opens —
+  no waiting, the app is usable instantly
+- On-device data cache: your profile and the Recent activity feed are
+  cached locally, so the home screen appears immediately from cache and
+  fresh data arrives silently in the background
+- New Credits tab in Settings: version info, developer details, and
+  connect buttons for Telegram (t.me/BonkerUnkilBonki) and GitHub
+  (github.com/BonkerUnkilBonki) with logos, plus languages used
 
-Home
+## What's new in v2.1 — issue creation everywhere
+- New issue from the global Issues tab: a New issue button now sits at
+  the top of the Issues tab in the bottom nav — pick one of your repos
+  from the picker sheet, then write the title and description
+- (Creating issues from a specific repo's Issues tab was already there
+  and still works the same)
 
-- GitHub profile information
-- Avatar, name and account statistics
-- Pinned repositories
-- Recent GitHub activity feed
-- Cached profile and activity data for instant loading
-- Fresh data silently synchronizes in the background
-- Quick links to:
-  - Repositories
-  - Issues
-  - Alerts
-  - Gists
-  - Discover
-  - Profile
+## What's new in v2.0 — create things on GitHub
+- Create repository: Repos tab > New repository — name, description,
+  Private/Public, optional README initialization; jumps straight into
+  your new repo
+- Create gist: Gists > New gist — description, filename, content,
+  Secret/Public
+- Add file: any repo's Files tab > Add file — filename, content and
+  commit message, committed straight from the app
+- Close / reopen issues and pull requests from the issue detail header
+- Edit profile: your own profile page > Edit profile — name, bio,
+  location
 
-Repositories
+## What's new in v1.9
+- Removed the custom TTF font import feature; the Font setting now offers
+  System (default) and App default only
 
-- View your repositories
-- View starred repositories
-- Search GitHub repositories
-- Pin and unpin repositories
-- Repository details with:
-  - README rendering
-  - File browser
-  - File viewer
-  - Issues
-  - Commits
-  - Releases
-  - Contributors
-  - Repository topics
-  - Language breakdown
-- Star / unstar repositories
-- Watch / unwatch repositories
-- Fork repositories
-- Open repositories directly on GitHub
-- Clone information with:
-  - HTTPS URL
-  - SSH URL
-  - Native copy buttons
-  - Download ZIP
+## What's new in v1.8
+- Custom color: a dashed "Custom" dot in the accent picker opens a full
+  color picker plus hex input — any color becomes your accent, with
+  matching pressed/glow shades derived automatically
+- Font options: System (default), App default, or Custom TTF —
+  import any .ttf/.otf from your device (up to 4 MB) via the native
+  file picker and OneGit renders its entire UI in your font
+- Custom color and font preference sync across devices (the font file
+  itself stays on the device that imported it)
 
-Repository Creation & Editing
+## What's new in v1.7
+- Glow effects toggle: Settings > Appearance > Glow effects — instantly
+  kills every neon glow (buttons, cards, highlights, spinner, logo pulse)
+  for a flat, battery-friendlier look; synced across devices
+- Three new accent colors: Teal, Red, Indigo (9 accents total)
+- Dynamic color: a rainbow "Dynamic" dot in Settings picks up your
+  system / wallpaper accent (Material You) on Android 12+ and applies it
+  to the whole UI — buttons, highlights, glows; falls back to blue where
+  unavailable
 
-- Create new repositories directly from the app
-- Set:
-  - Repository name
-  - Description
-  - Public/private visibility
-  - Optional README initialization
-- Edit repositories you have permission to push to:
-  - Description
-  - Homepage
-  - Public/private visibility
+## What's new in v1.6
+- Contributions 4x2 wide widget: full-year heatmap plus best day, streak
+  and yearly total, sized for a 4x2 slot
+- Background GitHub activity notifications: OneGit now checks GitHub
+  roughly every 15 minutes (even when closed) and posts system
+  notifications for new issues, PRs, mentions, reviews, releases and CI
+  results on repos you watch or participate in
+  - Notification permission is requested on first launch (Android 13+)
+  - Toggle in Settings > Notifications; re-arms itself after reboot
+  - Deduplicated per thread — you get notified once per activity
+  - Tapping a notification opens the Alerts tab
 
-File Management
+## What's new in v1.5
+- Contribution activity widgets (long-press home screen > Widgets > OneGit):
+  - Contributions 2x2: compact full-year heatmap
+  - Contributions 4x4: full-year heatmap plus best day, current streak
+    and yearly total
+- One UI 9 styling: dark rounded cards, Samsung-blue contribution scale
+  (empty -> bright), today's cell ringed
+- Live data via GitHub GraphQL using your saved token; refreshes every
+  30 minutes and every time you open the app
+- All four OneGit widgets now: Profile, Quick, Contributions 2x2, 4x4
 
-OneGit supports full basic repository file management directly from Android.
+## What's new in v1.4
+- Home screen widgets (long-press your launcher > Widgets > OneGit):
+  - OneGit Profile: avatar, name and repo/follower stats, refreshed live
+  - OneGit Quick: Home / Repos / Issues / Alerts launch pills
+- Releases: view every release with notes, assets (size + download count),
+  and one-tap in-app downloads via Android DownloadManager — plus
+  Source code (zip / tar.gz) for every tag
+- Clone sheet: HTTPS and SSH URLs with native copy buttons, Download ZIP
+- Repo topics shown as chips
+- Release assets download straight to your Downloads folder with a
+  system notification (works for public repos; private-repo asset
+  downloads may require re-auth in a browser)
 
-- Browse repository files
-- View file contents
-- Add/create files
-- Upload files from the Android file picker
-- Multi-select file uploads
-- Edit existing files
-- Delete files with confirmation
-- Enter commit messages when modifying files
-- Changes are committed directly to GitHub
+## What's new in v1.3
+- Fixed the empty space above the big header (title now sits right under the
+  status bar like One UI)
+- Repo actions: Star/Unstar, Watch/Unwatch, Fork (with confirmation), and
+  Open on GitHub
+- Language breakdown card on repo pages (colored bar + percentages)
+- Create new issues from any repo (bottom sheet form)
+- Followers / Following lists — tap the stats on any profile
+- Gists: browse your gists and public gists of any user, view file contents
+- Notifications filter: Unread / All
+- Home quick links: Gists, Discover, My profile
 
-Commits & Code
+## What's new in v1.2
+- Settings moved from the bottom bar to a top-right gear icon (also in the
+  collapsed app bar while scrolling)
+- Bottom navigation auto-hides while scrolling down or after ~4s idle and
+  slides back on any touch or upward scroll
+- Fuller One UI 9 rounding: cards 32px, navbar 34px, bigger pills and radii
+  everywhere; subtle card outlines in dark/pitch themes
+- Five accent color schemes: Blue, Purple, Green, Pink, Amber — recolors
+  buttons, highlights, glows and the login logo; synced across devices
 
-- Repository commits tab
-- Full commit details
-- Colorized code diffs
-- File viewer with readable code presentation
-- Repository language breakdown with percentages
+## What's new in v1.1
+- Pitch black (AMOLED) theme — third theme option alongside light and dark
+- Home activity feed (pushes, stars, forks, issues, PRs, releases)
+- Commits tab per repo + full commit detail with colorized diffs
+- Releases page per repo, contributors row on repo detail
+- Pull requests view (global and per repo) — open PRs, comment on them
+- User profiles: tap any username/avatar — stats, popular repos, follow/unfollow
+- People results in search, Discover tab (trending high-star repos)
+- Animations and glows: staggered card entrances, press feedback, glowing
+  buttons/nav/toasts, star pin pop, sheet slide-up, refresh button
+- Status and navigation bar colors follow the selected theme natively
 
-Issues
+OneGit is a lightweight GitHub client wrapped in a Samsung One UI-style interface:
+big collapsing titles, floating pill bottom navigation, rounded cards, segmented
+controls, pill buttons and a dark mode with the One UI dark palette.
 
-- Global Issues section
-- View issues created by or assigned to you
-- Open and closed issues
-- View complete issue threads
-- Post comments
-- Create issues from:
-  - Global Issues tab
-  - Individual repository Issues tab
-- Select a repository when creating an issue globally
-- Close and reopen issues directly from issue details
+## The APK
 
-Pull Requests
+`OneGit.apk` — install it on any Android 7.0+ (API 24) device. It is signed with
+the included debug keystore, so future builds signed with the same key will
+install as updates over this one.
 
-- Global and repository-specific pull request views
-- View open pull requests
-- Open pull request details
-- Comment on pull requests
-- Close and reopen pull requests directly from the detail screen
+## Signing in
 
-Releases
+OneGit connects to GitHub with a personal access token (the same idea as the
+official GitHub CLI or third-party clients):
 
-- View all repository releases
-- Release notes and metadata
-- View release assets
-- Asset sizes and download counts
-- Download release assets directly to Android Downloads
-- Android DownloadManager integration
-- Source-code downloads for tags:
-  - ZIP
-  - TAR.GZ
-- Create new releases with:
-  - Tag
-  - Title
-  - Description
-  - Final release
-  - Pre-release
-  - Draft
-- Upload release assets directly from the device
-- Supports files such as APKs, ZIPs and other assets
+1. In the app, tap "Create a token with the right scopes" (or visit
+   https://github.com/settings/tokens/new?scopes=repo,read:user,notifications,gist&description=OneGit).
+2. Generate the token and paste it into OneGit.
 
-Gists
+Scopes used: `repo`, `read:user`, `notifications`, `gist`.
+The token is stored only on your device (localStorage inside the app).
 
-- Browse your own gists
-- Browse public gists from other users
-- View gist file contents
-- Create new gists
-- Configure:
-  - Description
-  - Filename
-  - Content
-  - Public/private visibility
+## Sync across devices
 
-Profiles & People
+- All GitHub content (repos, issues, notifications) is fetched live from your
+  account, so every device you sign in on shows the same thing.
+- App preferences (pinned repositories, theme) are additionally saved to a
+  private Gist in your GitHub account. On a new device, sign in and your pins
+  and theme are restored automatically ("Restore from GitHub" in Settings).
+- The access token is never synced — you enter it once per device.
 
-- View GitHub user profiles
-- Profile statistics
-- Popular repositories
-- Follow / unfollow users
-- Followers and following lists
-- Tap usernames and avatars throughout the app to open profiles
-- Search for people on GitHub
+## Features
 
-GitHub Search & Discover
+- Home: profile, stats, pinned repositories
+- Repositories: your repos, starred repos, GitHub search, pin/unpin
+- Repo detail: README rendering, file browser with file viewer, issues
+- Issues: created/assigned, open/closed, full issue threads with comments,
+  post comments
+- Notifications: unread threads, open thread subject, mark read / mark all
+- Settings: dark mode, sync management, sign out
 
-- Search GitHub repositories
-- Search for people
-- Discover trending/high-star repositories
+## Project layout
 
-Notifications & Alerts
+    AndroidManifest.xml     app manifest (com.onegit)
+    src/com/onegit/         MainActivity (WebView wrapper)
+    assets/www/             the whole client UI (HTML/CSS/JS, no framework)
+    res/                    theme, strings, launcher icons
+    gen_icon.py             regenerates launcher icons (Pillow)
+    build.sh                builds the APK without Gradle
+    debug.keystore          signing key (keep it to sign updates)
 
-- GitHub notification center
-- Unread and all notification filters
-- Open notification threads
-- View notification subjects
-- Mark individual notifications as read
-- Mark all notifications as read
-- Background activity monitoring
-- System notifications for new:
-  - Issues
-  - Pull requests
-  - Mentions
-  - Reviews
-  - Releases
-  - CI results
-- Background checks run approximately every 15 minutes
-- Notifications are deduplicated per thread
-- Notification permission support on Android 13+
-- Notification monitoring can be enabled/disabled in Settings
-- Notification monitoring re-arms after device reboot
-- Tapping a notification opens the relevant Alerts section
+## Building
 
-Widgets
+The build script uses only Android build-tools + a JDK (no Gradle):
 
-OneGit provides four Android home-screen widgets:
+    # one-time toolchain setup
+    export SDK=/path/to/sdk
+    # build-tools 34.0.0 in $SDK/build-tools/34.0.0
+    # platform android-34 in  $SDK/platforms/android-34/android.jar
+    # JDK 17 on PATH
 
-- Profile Widget
-  
-  - Avatar
-  - Name
-  - Repository statistics
-  - Follower statistics
+    bash build.sh          # produces OneGit.apk
 
-- Quick Widget
-  
-  - Home
-  - Repositories
-  - Issues
-  - Alerts
+Icons can be regenerated with `python3 gen_icon.py`.
 
-- Contributions 2×2
-  
-  - Compact yearly GitHub contribution heatmap
+## Notes
 
-- Contributions 4×4
-  
-  - Full-year contribution heatmap
-  - Best contribution day
-  - Current streak
-  - Yearly total
-
-Contribution widgets use live GitHub GraphQL data and refresh periodically as well as when the app is opened.
-
-Contributions
-
-- Full-year GitHub contribution heatmap
-- Best contribution day
-- Current streak
-- Yearly contribution total
-- One UI-inspired contribution colors
-- Today's contribution cell is highlighted
-
-Sync & Data
-
-- GitHub content is fetched live from your account.
-- Profile and recent activity are cached locally for faster startup.
-- App preferences such as pinned repositories and theme can be synchronized through a private GitHub Gist.
-- Preferences automatically restore when signing in on another device.
-- Sync happens in the background without blocking normal app usage.
-- GitHub access tokens are not synchronized between devices.
-- Each device requires its own token.
-
-Authentication
-
-OneGit uses a GitHub Personal Access Token.
-
-Required scopes:
-
-- "repo"
-- "read:user"
-- "notifications"
-- "gist"
-
-The access token is stored locally on the device and is not synchronized to other devices.
-
-Settings & Customization
-
-Settings include:
-
-- Light / Dark / AMOLED themes
-- Accent color selection
-- Custom accent color
-- Dynamic Material You colors
-- Glow effects toggle
-- Notification controls
-- GitHub preference synchronization
-- Sign out
-- Credits and application information
-
-The Credits section contains:
-
-- Version information
-- Developer information
-- GitHub link
-- Telegram link
-- Logos
-- Languages used in the project
-
-Android Support
-
-- Android 7.0+ / API 24+
-- Native Android file picker integration
-- Android DownloadManager integration
-- Android system notifications
-- Home-screen widgets
-- Android 12+ Material You dynamic colors
-- Android 13+ notification permission support
-
-Technical Overview
-
-- Lightweight Android application
-- Main Android activity uses a WebView wrapper
-- UI is built with plain HTML, CSS and JavaScript
-- No frontend framework
-- Web assets are bundled inside the APK
-- Can also be opened as a PWA-style web interface by extracting the "assets/www/" files
-- APK can be built without Gradle using Android build-tools and a JDK
-- Project includes a build script and launcher-icon generator
-
-Latest Overall Feature Set
-
-In short, OneGit is now a full-featured GitHub client rather than just a GitHub viewer. It supports browsing and searching GitHub, repository management, file creation/upload/edit/delete, commits and diffs, issues, pull requests, releases and release uploads, gists, profiles, followers, notifications, contribution widgets, GitHub preference sync, and extensive One UI-style customization—all from Android.
+- Not affiliated with GitHub or Samsung; One UI is used purely as a visual
+  inspiration.
+- The web UI is plain HTML/CSS/JS served from the app's assets, so it can also
+  be opened in any browser as a PWA-style page if you extract assets/www/.
