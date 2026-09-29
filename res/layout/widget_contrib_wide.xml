@@ -3,51 +3,128 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
+    android:background="@drawable/widget_root_bg"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_card"
+        android:orientation="vertical"
+        android:padding="10dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Contributions"
-            android:textColor="#FFFFFFFF"
-            android:textSize="14sp"
+            android:text="Contribution graph · last 12 months"
+            android:textColor="#FFF2F2F2"
+            android:textSize="11sp"
             android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/w_heat"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="6dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/heat_desc" />
 
         <TextView
             android:id="@+id/w_total"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text=""
             android:textColor="#FF63A4FF"
-            android:textSize="14sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/w_heat"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="12dp"
-        android:scaleType="fitCenter"
-        android:contentDescription="@string/heat_desc" />
-
-    <TextView
-        android:id="@+id/w_stats"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text=""
-        android:textColor="#FFD5D9DE"
-        android:textSize="12sp"
-        android:maxLines="1" />
+        android:layout_marginTop="6dp"
+        android:background="@drawable/widget_card"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/v1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#FFF2F2F2"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="this week"
+                android:textColor="#FF9A9A9A"
+                android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/v2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#FFF2F2F2"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="current streak"
+                android:textColor="#FF9A9A9A"
+                android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/v3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#FFF2F2F2"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="busiest day"
+                android:textColor="#FF9A9A9A"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+    </LinearLayout>
 </LinearLayout>
