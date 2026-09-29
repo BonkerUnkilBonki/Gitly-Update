@@ -7,6 +7,11 @@ const LS = {
   del(k) { try { localStorage.removeItem('onegit.' + k); } catch (e) {} }
 };
 let TOKEN = LS.get('token', null);
+let RSEQ = 0;
+let lastOfflineToast = 0;
+const API_MEM = {};
+const APPV = '2.34';
+const UPD_REPO = 'BonkerUnkilBonki/OneGit';
 let USER = null;
 let pins = LS.get('pins', []);
 let gistId = LS.get('gistId', null);
@@ -38,6 +43,7 @@ const SVG = {
   file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
   dot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>',
   commit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><line x1="1" y1="12" x2="8.5" y2="12"/><line x1="15.5" y1="12" x2="23" y2="12"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
@@ -51,7 +57,8 @@ const SVG = {
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   telegram: '<svg viewBox="0 0 24 24" fill="#229ED9" width="20" height="20"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
-  github: '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
+  github: '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
 };
 
 /* ================= api ================= */
@@ -61,15 +68,40 @@ async function api(path, opts = {}) {
   if (opts.accept) headers.Accept = opts.accept;
   if (opts.body) headers['Content-Type'] = 'application/json';
   if (opts.noAuth) { delete headers.Authorization; }
-  const res = await fetch('https://api.github.com' + path, { method: opts.method || 'GET', headers, body: opts.body || undefined });
+  const isGet = !opts.method || opts.method === 'GET';
+  const canCache = isGet && !opts.status;
+  let res;
+  try {
+    res = await fetch('https://api.github.com' + path, { method: opts.method || 'GET', headers, body: opts.body || undefined, cache: 'no-store' });
+  } catch (netErr) {
+    if (canCache) {
+      const c = LS.get('c:' + path, null);
+      if (c && (c.raw ? typeof c.d === 'string' : c.d !== undefined)) {
+        if (Date.now() - (lastOfflineToast || 0) > 30000) { lastOfflineToast = Date.now(); try { toast('Offline — showing saved data'); } catch (e) {} }
+        return c.d;
+      }
+    }
+    throw netErr;
+  }
   if (res.status === 401) { if (USER) doLogout('Session expired — sign in again'); throw new Error('Invalid or expired token'); }
   if (opts.status) { const d = await res.json().catch(() => null); return { status: res.status, ok: res.ok, data: d }; }
   if (res.status === 204) return null;
-  if (opts.text) { const t = await res.text(); if (!res.ok) throw new Error('HTTP ' + res.status); return t; }
+  if (opts.text) { const t = await res.text(); if (!res.ok) throw new Error('HTTP ' + res.status); if (canCache) { const k = 'c:' + path; if (API_MEM[k] !== t) { API_MEM[k] = t; try { LS.set(k, { raw: 1, d: t }); } catch (e) {} } } return t; }
   let data = null; try { data = await res.json(); } catch (e) {}
-  if (!res.ok) throw new Error((data && data.message) || ('HTTP ' + res.status));
+  if (!res.ok) {
+    let m = (data && data.message) || ('HTTP ' + res.status);
+    if (data && Array.isArray(data.errors) && data.errors.length) {
+      const extra = data.errors.map(x => x && x.message).filter(Boolean).join('; ');
+      if (extra) m += ' — ' + extra;
+    }
+    throw new Error(m);
+  }
+  if (canCache && data !== null && data !== undefined) { const k = 'c:' + path, s = JSON.stringify(data); if (API_MEM[k] !== s) { API_MEM[k] = s; try { LS.set(k, { d: data }); } catch (e) {} } }
   return data;
 }
+
+/* instant cache read for paint-first rendering */
+function cached(path) { try { const c = LS.get('c:' + path, null); if (c && (c.raw ? typeof c.d === 'string' : c.d !== undefined)) return c.d; } catch (e) {} return undefined; }
 
 /* ================= theme (mode + accent + glow) ================= */
 function shadeHex(hex, f) {
@@ -82,6 +114,7 @@ function applyTheme() {
   if (t === 'dark') document.body.classList.add('dark');
   else if (t === 'pitch') document.body.classList.add('pitch');
   const rt = document.documentElement;
+  document.body.classList.toggle('navglow', !!LS.get('navglow', false));
   const acc = LS.get('accent', 'blue');
   rt.dataset.accent = acc;
   rt.dataset.glow = LS.get('glow', true) ? 'on' : 'off';
@@ -106,6 +139,15 @@ function applyTheme() {
       window.OneGit.theme(t === 'light' ? '#F2F2F2' : (t === 'dark' ? '#161719' : '#000000'), t === 'light');
     }
   } catch (e) {}
+  let accHex = '';
+  try { accHex = getComputedStyle(rt).getPropertyValue('--accent').trim(); } catch (e) {}
+  if (/^#[0-9A-Fa-f]{6}$/.test(accHex)) {
+    const ch = v => { const c = parseInt(v, 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const L = 0.2126 * ch(accHex.slice(1, 3)) + 0.7152 * ch(accHex.slice(3, 5)) + 0.0722 * ch(accHex.slice(5, 7));
+    rt.style.setProperty('--accentText', L > 0.45 ? '#151515' : '#fff');
+  } else {
+    rt.style.setProperty('--accentText', '#fff');
+  }
 }
 
 /* ================= font (bundled OneGit Sans everywhere) ================= */
@@ -133,7 +175,7 @@ function togglePin(r) {
 function queueSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncPush(true), 1500); }
 async function syncPush(silent) {
   if (!TOKEN) return;
-  const payload = { app: 'onegit', version: 1, updated_at: new Date().toISOString(), pins, theme: LS.get('theme', 'light'), accent: LS.get('accent', 'blue'), customAccent: LS.get('customAccent', ''), glow: LS.get('glow', true), font: LS.get('font', 'system'), notify: LS.get('notify', true) };
+  const payload = { app: 'onegit', version: 1, updated_at: new Date().toISOString(), pins, theme: LS.get('theme', 'light'), accent: LS.get('accent', 'blue'), customAccent: LS.get('customAccent', ''), glow: LS.get('glow', true), navglow: LS.get('navglow', false), autodl: LS.get('autodl', false), font: LS.get('font', 'system'), notify: LS.get('notify', true) };
   try {
     const files = { 'onegit-sync.json': { content: JSON.stringify(payload, null, 2) } };
     if (!gistId) {
@@ -163,10 +205,62 @@ async function syncRestore(silent) {
     if (d.customAccent) { LS.set('customAccent', d.customAccent); applyTheme(); }
     if (d.font) { LS.set('font', 'default'); applyFont(); }
     if (typeof d.glow === 'boolean') { LS.set('glow', d.glow); applyTheme(); }
+    if (typeof d.navglow === 'boolean') { LS.set('navglow', d.navglow); applyTheme(); }
     if (typeof d.notify === 'boolean') LS.set('notify', d.notify);
+    if (typeof d.autodl === 'boolean') LS.set('autodl', d.autodl);
     if (!silent) toast('Restored from your private Gist');
     return true;
   } catch (e) { if (!silent) toast('Restore failed: ' + e.message); return false; }
+}
+
+/* ================= app update (GitHub releases) ================= */
+let UPD_CHECKED = false;
+function newerVersion(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.'), pb = String(b).replace(/^v/, '').split('.');
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = parseInt(pa[i] || 0, 10), y = parseInt(pb[i] || 0, 10);
+    if (x > y) return true;
+    if (x < y) return false;
+  }
+  return false;
+}
+function showUpdateCard(tag, name, asset) {
+  if (document.getElementById('updCard')) return;
+  const el = document.createElement('div');
+  el.id = 'updCard';
+  el.innerHTML = '<div class="updrow"><div class="lmain"><div class="ltitle">Update available \u00b7 v' + esc(tag) + '</div>' +
+    '<div class="lsub">' + (name ? esc(name) + ' \u00b7 ' : '') + 'a new OneGit release is on GitHub</div></div>' +
+    '<button class="btn sm primary" id="updGet">Update</button>' +
+    '<button class="iconbtn" id="updX" aria-label="dismiss">\u2715</button></div>';
+  document.body.appendChild(el);
+  const kill = () => { try { el.remove(); } catch (e) {} };
+  setTimeout(kill, 20000);
+  $('#updGet').addEventListener('click', () => {
+    if (asset && window.OneGit && window.OneGit.download) {
+      try { window.OneGit.download(asset.browser_download_url, asset.name); toast('Downloading OneGit v' + tag); }
+      catch (e) { location.href = 'https://github.com/' + UPD_REPO + '/releases/latest'; }
+    } else location.href = 'https://github.com/' + UPD_REPO + '/releases/latest';
+    kill();
+  });
+  $('#updX').addEventListener('click', kill);
+}
+async function checkUpdate() {
+  if (UPD_CHECKED || !TOKEN) return;
+  UPD_CHECKED = true;
+  try {
+    const rel = await api('/repos/' + UPD_REPO + '/releases/latest');
+    const tag = String(rel.tag_name || '').replace(/^v/, '');
+    if (!tag || !newerVersion(tag, APPV)) return;
+    const asset = (rel.assets || []).find(a => /\.apk$/i.test(a.name || ''));
+    if (LS.get('autodl', false) && asset && LS.get('updDl', '') !== tag) {
+      LS.set('updDl', tag);
+      try { window.OneGit.download(asset.browser_download_url, asset.name); toast('Downloading update v' + tag); } catch (e) {}
+    }
+    if (LS.get('updShown', '') !== tag) {
+      LS.set('updShown', tag);
+      showUpdateCard(tag, rel.name, asset);
+    }
+  } catch (e) {}
 }
 
 /* ================= auth ================= */
@@ -183,6 +277,8 @@ function showLogin() { $('#app').hidden = true; $('#login').hidden = false; }
 const view = () => $('#view');
 const ROUTES = [
   { re: /^#\/home$/, tab: 0, detail: false, title: () => 'Hi, ' + (USER ? USER.login : 'there'), sub: () => '', render: renderHome },
+  { re: /^#\/productivity$/, tab: -1, detail: true, title: () => 'Productivity', sub: () => 'Your GitHub, by the numbers', render: renderProductivity },
+  { re: /^#\/activity$/, tab: -1, detail: true, title: () => 'Activity', sub: () => 'Everything from people you follow', render: renderActivity },
   { re: /^#\/repos$/, tab: 1, detail: false, title: () => 'Repositories', sub: () => 'Your code, your stars, what is hot', render: renderRepos },
   { re: /^#\/repo\/([^\/]+)\/([^\/]+)\/files(\/.*)?$/, tab: 1, detail: true, title: m => m[2], sub: m => m[1] + ' / ' + m[2] + ' — files', render: m => renderFiles(m[1], m[2], (m[3] || '').replace(/^\//, '')) },
   { re: /^#\/repo\/([^\/]+)\/([^\/]+)\/commits$/, tab: 1, detail: true, title: () => 'Commits', sub: m => m[1] + ' / ' + m[2], render: m => renderCommits(m[1], m[2]) },
@@ -193,7 +289,7 @@ const ROUTES = [
   { re: /^#\/issue\/([^\/]+)\/([^\/]+)\/(\d+)$/, tab: -1, detail: true, title: m => (m[4] === 'pr' ? 'PR #' : 'Issue #') + m[3], sub: m => m[1] + ' / ' + m[2], render: m => renderIssue(m[1], m[2], +m[3]) },
   { re: /^#\/user\/([^\/]+)$/, tab: -1, detail: true, title: m => '@' + m[1], sub: () => 'GitHub profile', render: m => renderUser(m[1]) },
   { re: /^#\/issues$/, tab: 2, detail: false, title: () => 'Issues', sub: () => 'Issues and pull requests', render: renderIssues },
-  { re: /^#\/notifs$/, tab: 3, detail: false, title: () => 'Notifications', sub: () => 'Your unread threads', render: renderNotifs },
+  { re: /^#\/notifs$/, tab: -1, detail: false, title: () => 'Notifications', sub: () => 'Your unread threads', render: renderNotifs },
   { re: /^#\/users\/([^\/]+)\/(followers|following)$/, tab: -1, detail: true, title: m => m[2][0].toUpperCase() + m[2].slice(1), sub: m => '@' + m[1], render: m => renderUserList(m[1], m[2]) },
   { re: /^#\/user\/([^\/]+)\/gists$/, tab: -1, detail: true, title: () => 'Gists', sub: m => '@' + m[1], render: m => renderGists(m[1]) },
   { re: /^#\/gist\/([0-9a-f]+)$/, tab: -1, detail: true, title: () => 'Gist', sub: () => 'Snippet files', render: m => renderGist(m[1]) },
@@ -321,9 +417,165 @@ function openSheet(inner) { const s = $('#sheet'); s.innerHTML = '<div class="sh
 function closeSheet() { const s = $('#sheet'); if (s) { s.hidden = true; s.innerHTML = ''; } }
 
 /* ================= views: home ================= */
+/* ================= views: productivity ================= */
+function heatLevel(c) { return c === 0 ? 0 : c < 3 ? 1 : c < 7 ? 2 : c < 12 ? 3 : 4; }
+function prodHtml(cc) {
+  const cal = cc.contributionCalendar;
+  const days = [];
+  cal.weeks.forEach(w => w.contributionDays.forEach(d => days.push(d)));
+  const byDate = {};
+  days.forEach(d => byDate[d.date] = d.contributionCount);
+  const dStr = off => { const t = new Date(); t.setDate(t.getDate() - off); return t.toISOString().slice(0, 10); };
+  const sumLast = n => { let s = 0; for (let i = 0; i < n; i++) s += (byDate[dStr(i)] || 0); return s; };
+  const week = sumLast(7), month = sumLast(30);
+  let i = days.length - 1;
+  while (i >= 0 && days[i].contributionCount === 0) i--;
+  let cur = 0;
+  while (i >= 0 && days[i].contributionCount > 0) { cur++; i--; }
+  let best = 0, run = 0, bd = null;
+  days.forEach(d => {
+    if (d.contributionCount > 0) { run++; if (run > best) best = run; } else run = 0;
+    if (!bd || d.contributionCount > bd.contributionCount) bd = d;
+  });
+  const avg = days.length ? cal.totalContributions / days.length : 0;
+  let graph = '<div class="heatwrap">';
+  cal.weeks.forEach(w => {
+    graph += '<div class="heatcol">' + w.contributionDays.map(d =>
+      '<span class="heatcell l' + heatLevel(d.contributionCount) + '" title="' + d.date + ' · ' + d.contributionCount + ' contributions"></span>').join('') + '</div>';
+  });
+  graph += '</div>';
+  const legend = '<div class="lgdrow" style="margin-top:12px;align-items:center">Less ' +
+    [0, 1, 2, 3, 4].map(l => '<span class="heatcell l' + l + '" style="display:inline-block"></span>').join('') + ' More</div>';
+  const repos = (cc.commitContributionsByRepository || []).slice()
+    .sort((a, b) => b.contributions.totalCount - a.contributions.totalCount).slice(0, 5);
+  let html = '<div class="card"><div class="ltitle" style="margin-bottom:10px">Contribution graph · last 12 months</div>' + graph + legend + '</div>';
+  html += '<h2 class="sect">Right now</h2><div class="card"><div class="bigstats">' +
+    '<div class="bstat"><b>' + nf(week) + '</b><span>this week</span></div>' +
+    '<div class="bstat"><b>' + nf(month) + '</b><span>this month</span></div>' +
+    '<div class="bstat"><b>' + cur + 'd</b><span>current streak</span></div>' +
+    '<div class="bstat"><b>' + best + 'd</b><span>longest streak</span></div>' +
+    '<div class="bstat"><b>' + avg.toFixed(1) + '</b><span>daily average</span></div>' +
+    '<div class="bstat"><b>' + nf(bd ? bd.contributionCount : 0) + '</b><span>busiest day</span></div></div></div>';
+  html += '<h2 class="sect">This year on GitHub</h2><div class="card"><div class="bigstats">' +
+    '<div class="bstat"><b>' + nf(cc.totalCommitContributions) + '</b><span>commits made</span></div>' +
+    '<div class="bstat"><b>' + nf(cc.totalPullRequestContributions) + '</b><span>pull requests</span></div>' +
+    '<div class="bstat"><b>' + nf(cc.totalIssueContributions) + '</b><span>issues</span></div>' +
+    '<div class="bstat"><b>' + nf(cc.totalPullRequestReviewContributions) + '</b><span>reviews</span></div>' +
+    '<div class="bstat"><b>' + nf(cc.totalRepositoryContributions) + '</b><span>new repos</span></div>' +
+    '<div class="bstat"><b>' + nf(cal.totalContributions) + '</b><span>contributions</span></div></div></div>';
+  html += '<h2 class="sect">Most active repositories</h2>';
+  html += repos.length ? '<div class="card list">' + repos.map(r =>
+    '<div class="lrow" data-go="#/repo/' + esc(r.repository.nameWithOwner) + '">' + SVG.code +
+    '<div class="lmain"><div class="ltitle">' + esc(r.repository.nameWithOwner) + '</div>' +
+    '<div class="lsub">' + nf(r.contributions.totalCount) + ' commits this year</div></div></div>').join('') + '</div>' :
+    '<div class="card empty">No repository activity yet.</div>';
+  return html;
+}
+async function renderProductivity() {
+  const seq = ++RSEQ;
+  if (!PDATE) PDATE = todayStr();
+  const cached = LS.get('c.prod', null);
+  const paint = cc => {
+    let html = '<div class="seg" style="margin-bottom:16px"><button class="segb' + (PTAB === 'overview' ? ' on' : '') + '" data-pt="overview">Overview</button><button class="segb' + (PTAB === 'today' ? ' on' : '') + '" data-pt="today">Today</button></div>';
+    html += PTAB === 'today' ? todayHtml(cc) : (cc ? prodHtml(cc) : spinner());
+    if (seq !== RSEQ) return;
+    view().innerHTML = html;
+    $$('[data-pt]').forEach(b => b.addEventListener('click', () => { PTAB = b.dataset.pt; renderProductivity(); }));
+    wireDayPicker();
+  };
+  paint(cached);
+  const query = 'query{viewer{login contributionsCollection{totalCommitContributions totalPullRequestContributions totalIssueContributions totalPullRequestReviewContributions totalRepositoryContributions commitContributionsByRepository(maxRepositories:10){contributions{totalCount} repository{nameWithOwner stargazerCount}} contributionCalendar{totalContributions weeks{contributionDays{date contributionCount}}}}}}';
+  try {
+    const r = await api('/graphql', { method: 'POST', body: JSON.stringify({ query }) });
+    const cc = r && r.data && r.data.viewer && r.data.viewer.contributionsCollection;
+    if (!cc) throw new Error('No stats returned');
+    LS.set('c.prod', cc);
+    paint(cc);
+  } catch (e) { if (seq !== RSEQ) return; if (!cached) view().innerHTML = errCard(e); }
+  if (PTAB === 'today') loadDay();
+}
+
+/* ---- Today tab: stats for a particular day ---- */
+let PTAB = 'overview', PDATE = '';
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function todayHtml(cc) {
+  const isToday = PDATE === todayStr();
+  let cnt = 0, last7 = [];
+  if (cc && cc.contributionCalendar) {
+    const byDate = {};
+    cc.contributionCalendar.weeks.forEach(w => w.contributionDays.forEach(x => byDate[x.date] = x.contributionCount));
+    cnt = byDate[PDATE] || 0;
+    for (let i = 6; i >= 0; i--) {
+      const t = new Date(); t.setDate(t.getDate() - i);
+      const ds = t.toISOString().slice(0, 10);
+      last7.push({ ds, c: byDate[ds] || 0, wd: 'SMTWTFS'.charAt(t.getDay()) });
+    }
+  }
+  const max = Math.max.apply(null, last7.map(x => x.c).concat([1]));
+  const d = new Date(PDATE + 'T00:00:00');
+  return '<div class="card" style="text-align:center;padding:24px 20px">' +
+    '<div class="lsub">' + (isToday ? 'Today · ' : '') + d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</div>' +
+    '<div style="font-size:52px;font-weight:800;letter-spacing:-1px;margin:6px 0 2px">' + nf(cnt) + '</div>' +
+    '<div class="lsub">contributions</div></div>' +
+    '<div class="card"><div class="ltitle" style="margin-bottom:6px">Last 7 days — tap a bar</div>' +
+    '<div class="daybars">' + last7.map(x =>
+      '<div class="daybar' + (x.ds === PDATE ? ' cur' : '') + '" data-day="' + x.ds + '"><span style="height:' + Math.max(6, Math.round(x.c / max * 76)) + 'px"></span><i>' + x.wd + '</i></div>').join('') + '</div></div>' +
+    '<div class="card"><div class="ltitle" style="margin-bottom:8px">Pick a day</div>' +
+    '<div style="display:flex;gap:8px"><input type="date" class="fld" id="dayPick" value="' + PDATE + '" style="flex:1">' +
+    '<button class="btn ghost" id="todayBtn">Today</button></div></div>' +
+    '<h2 class="sect">That day</h2><div class="card" id="dayDetail">' + spinner(true) + '</div>';
+}
+function wireDayPicker() {
+  const dp = $('#dayPick');
+  if (dp) dp.addEventListener('change', () => { PDATE = dp.value || todayStr(); renderProductivity(); });
+  const tb = $('#todayBtn');
+  if (tb) tb.addEventListener('click', () => { PDATE = todayStr(); renderProductivity(); });
+  $$('[data-day]').forEach(b => b.addEventListener('click', () => { PDATE = b.dataset.day; renderProductivity(); }));
+}
+async function loadDay() {
+  const seq = ++RSEQ;
+  const el = $('#dayDetail'); if (!el) return;
+  const q = 'query($from:DateTime!,$to:DateTime!){viewer{contributionsCollection(from:$from,to:$to){totalCommitContributions totalPullRequestContributions totalIssueContributions totalPullRequestReviewContributions commitContributionsByRepository(maxRepositories:10){contributions{totalCount} repository{nameWithOwner}}}}}';
+  try {
+    const r = await api('/graphql', { method: 'POST', body: JSON.stringify({ query: q, variables: { from: PDATE + 'T00:00:00Z', to: PDATE + 'T23:59:59Z' } }) });
+    const cc = r && r.data && r.data.viewer && r.data.viewer.contributionsCollection;
+    if (!cc) throw new Error('No data');
+    const repos = (cc.commitContributionsByRepository || []).filter(x => x.contributions.totalCount > 0);
+    if (seq !== RSEQ) return;
+    el.innerHTML = '<div class="bigstats">' +
+      '<div class="bstat"><b>' + nf(cc.totalCommitContributions) + '</b><span>commits</span></div>' +
+      '<div class="bstat"><b>' + nf(cc.totalPullRequestContributions) + '</b><span>pull requests</span></div>' +
+      '<div class="bstat"><b>' + nf(cc.totalIssueContributions) + '</b><span>issues</span></div>' +
+      '<div class="bstat"><b>' + nf(cc.totalPullRequestReviewContributions) + '</b><span>reviews</span></div></div>' +
+      (repos.length ? '<div class="ltitle" style="margin:16px 0 4px">Worked on</div><div class="list">' + repos.map(x =>
+        '<div class="lrow" data-go="#/repo/' + esc(x.repository.nameWithOwner) + '">' + SVG.code +
+        '<div class="lmain"><div class="ltitle">' + esc(x.repository.nameWithOwner) + '</div>' +
+        '<div class="lsub">' + x.contributions.totalCount + ' commit' + (x.contributions.totalCount > 1 ? 's' : '') + '</div></div></div>').join('') + '</div>' :
+        '<div class="lsub dim" style="margin-top:10px">No repository commits that day.</div>');
+  } catch (e) { if (seq !== RSEQ) return; el.innerHTML = '<div class="lsub dim">Could not load the details for this day.</div>'; }
+}
+
+/* ================= activity history (persistent, never cleared) ================= */
+function mergeHist(evs) {
+  const old = LS.get('c.hist', null) || LS.get('c.feed', null) || [];
+  const map = new Map();
+  old.forEach(e => { if (e && e.id) map.set(e.id, e); });
+  (evs || []).forEach(e => { if (e && e.id) map.set(e.id, e); });
+  const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  LS.set('c.hist', merged.slice(0, 300));
+  return merged.slice(0, 300);
+}
+async function refreshActivity(login) {
+  const own = await api('/users/' + login + '/events?per_page=100').catch(() => []);
+  const rec = await api('/users/' + login + '/received_events?per_page=50').catch(() => []);
+  return mergeHist((Array.isArray(own) ? own : []).concat(Array.isArray(rec) ? rec : []));
+}
+
 async function renderHome() {
+  const seq = ++RSEQ;
+  checkUpdate();
   const u = USER || await api('/user');
-  let html = '<div class="card profile"><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
+  let html = '<div class="card profile"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
     '<div class="pname">' + esc(u.name || u.login) + '</div>' +
     '<div class="plogin" data-go="#/user/' + esc(u.login) + '">@' + esc(u.login) + '</div>' +
     (u.bio ? '<p class="pbio">' + esc(u.bio) + '</p>' : '') +
@@ -331,25 +583,44 @@ async function renderHome() {
     '<div class="pstat"><b>' + nf(u.public_repos) + '</b><span>repos</span></div>' +
     '<div class="pstat"><b>' + nf(u.followers) + '</b><span>followers</span></div>' +
     '<div class="pstat"><b>' + nf(u.following) + '</b><span>following</span></div></div></div>';
-  html += '<div class="card quicklinks"><button class="btn ghost" data-go="#/gists">Gists</button><button class="btn ghost" data-act="discover">Discover</button><button class="btn ghost" data-go="#/user/' + esc(u.login) + '">My profile</button></div>';
+  html += '<div class="card quicklinks"><button class="btn ghost" data-go="#/productivity">Productivity</button><button class="btn ghost" data-act="discover">Discover</button><button class="btn ghost" data-go="#/user/' + esc(u.login) + '">My profile</button></div>';
   html += '<h2 class="sect">Pinned repositories</h2>';
   html += pins.length ? pins.map(repoRow).join('') : '<div class="card empty">Star any repository in the Repositories tab to pin it here.<br><span class="dim">Pins sync to all your devices via your GitHub account.</span></div>';
-  const feedEv = evs => evs.length ? '<div class="card list">' + evs.map(eventRow).join('') + '</div>' : '<div class="card empty">No recent activity from people you follow.</div>';
-  const cFeed = LS.get('c.feed', null);
-  html += '<h2 class="sect">Recent activity</h2><div id="feedWrap">' + (cFeed ? feedEv(cFeed) : spinner()) + '</div>';
+  const feedHtml = evs => (evs.length ? '<div class="card list">' + evs.slice(0, 3).map(eventRow).join('') + '</div>' : '<div class="card empty">Nothing here yet — your GitHub activity will show up as you go.</div>') +
+    '<button class="btn ghost btnblock" style="margin-top:12px" id="allActBtn">View all activity</button>';
+  const cHist = LS.get('c.hist', null) || LS.get('c.feed', null) || [];
+  html += '<h2 class="sect">Recent activity</h2><div id="feedWrap">' + (cHist.length ? feedHtml(cHist) : spinner()) + '</div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
+  const wireAct = () => { const nb = $('#allActBtn'); if (nb) nb.addEventListener('click', () => location.hash = '#/activity'); };
+  wireAct();
   try {
-    const evs = await api('/users/' + u.login + '/received_events?per_page=20');
-    LS.set('c.feed', evs);
+    const merged = await refreshActivity(u.login);
     const fw = $('#feedWrap');
-    if (fw) fw.innerHTML = feedEv(evs);
-  } catch (e) { if (!cFeed) { const fw = $('#feedWrap'); if (fw) fw.innerHTML = errCard(e); } }
+    if (fw && seq === RSEQ) fw.innerHTML = feedHtml(merged);
+    wireAct();
+  } catch (e) { if (seq !== RSEQ) return; if (!cHist.length) { const fw = $('#feedWrap'); if (fw) fw.innerHTML = errCard(e); } }
+}
+
+async function renderActivity() {
+  const seq = ++RSEQ;
+  const u = USER || await api('/user');
+  const cHist = LS.get('c.hist', null) || LS.get('c.feed', null) || [];
+  if (seq !== RSEQ) return;
+  view().innerHTML = cHist.length ? '<div class="card list">' + cHist.map(eventRow).join('') + '</div>' : spinner();
+  try {
+    const merged = await refreshActivity(u.login);
+    if (seq !== RSEQ) return;
+    view().innerHTML = merged.length ? '<div class="card list">' + merged.map(eventRow).join('') + '</div>' : '<div class="card empty">No activity yet.</div>';
+  } catch (e) { if (seq !== RSEQ) return; if (!cHist.length) view().innerHTML = errCard(e); }
 }
 
 /* ================= views: repos (mine / starred / discover + search) ================= */
 let RS = { mode: 'mine', q: '', page: 1, items: [] };
 async function renderRepos() {
+  const seq = ++RSEQ;
   RS = { mode: RS.mode || 'mine', q: '', page: 1, items: [] };
+  if (seq !== RSEQ) return;
   view().innerHTML = '<button class="btn ghost btnblock" id="newRepoBtn" style="margin-bottom:12px">New repository</button>' +
     '<div class="searchbar" id="searchWrap">' + SVG.search + '<input id="repoSearch" placeholder="Search repos and people…" autocomplete="off"></div>' +
     '<div class="seg" id="repoSeg">' +
@@ -367,8 +638,17 @@ async function renderRepos() {
   loadRepos(true);
 }
 async function loadRepos(reset) {
+  const seq = ++RSEQ;
   const list = $('#repoList'); if (!list) return;
   if (reset) { RS.page = 1; RS.items = []; list.innerHTML = spinner(); }
+  if (reset && RS.q.length < 2 && RS.mode !== 'discover') {
+    const cd = cached(RS.mode === 'starred' ? '/user/starred?per_page=30&page=1' : '/user/repos?sort=updated&per_page=30&page=1');
+    if (cd && Array.isArray(cd) && cd.length) {
+      cd.forEach(r => repoCache.set(r.full_name, r));
+      RS.items = cd;
+      list.innerHTML = cd.map(repoRow).join('');
+    }
+  }
   $('#searchWrap').style.display = (RS.mode === 'discover') ? 'none' : '';
   let data = [], people = null;
   try {
@@ -388,7 +668,7 @@ async function loadRepos(reset) {
     } else {
       data = await api('/user/repos?sort=updated&per_page=30&page=' + RS.page);
     }
-  } catch (e) { list.innerHTML = errCard(e); return; }
+  } catch (e) { if (seq !== RSEQ) return; list.innerHTML = errCard(e); return; }
   data.forEach(r => repoCache.set(r.full_name, r));
   RS.items = reset ? data : RS.items.concat(data);
   let html = '';
@@ -399,14 +679,18 @@ async function loadRepos(reset) {
   }
   if (RS.items.length) html += RS.items.map(repoRow).join('');
   else html += '<div class="card empty">' + (RS.q ? 'No results for "' + esc(RS.q) + '"' : (RS.mode === 'discover' ? 'Nothing trending right now.' : 'Nothing here yet.')) + '</div>';
+  if (seq !== RSEQ) return;
   list.innerHTML = html;
   $('#repoMore').hidden = data.length < 30;
 }
 
 /* ================= views: repo detail ================= */
 async function renderRepo(o, n) {
+  const seq = ++RSEQ;
   const full = o + '/' + n;
-  let r; try { r = await api('/repos/' + full); } catch (e) { view().innerHTML = errCard(e); return; }
+  let r = cached('/repos/' + full) || null;
+  if (r) api('/repos/' + full).then(fr => { if (fr && fr.full_name) repoCache.set(fr.full_name, fr); }).catch(() => {});
+  if (!r) { try { r = await api('/repos/' + full); } catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; } }
   repoCache.set(r.full_name, r);
   let html = '<div class="card">' +
     '<div class="rcrow"><div class="rcname">' + esc(r.name) + '</div>' +
@@ -438,6 +722,7 @@ async function renderRepo(o, n) {
     '<a class="segb" href="#/repo/' + full + '/issues">Issues</a></div>';
   html += '<div id="readmeWrap">' + spinner() + '</div>';
   html += '<div id="langWrap"></div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
   // contributors + latest release
   const [contribs, release] = await Promise.all([
@@ -509,20 +794,23 @@ async function renderRepo(o, n) {
   // readme
   try {
     const md = await api('/repos/' + full + '/readme', { accept: 'application/vnd.github.html', text: true });
-    $('#readmeWrap').innerHTML = '<div class="card md">' + fixMd(md) + '</div>';
-  } catch (e) { $('#readmeWrap').innerHTML = '<div class="card empty">No README found.</div>'; }
+    const rw = $('#readmeWrap');
+    if (rw && seq === RSEQ) rw.innerHTML = '<div class="card md">' + fixMd(md) + '</div>';
+  } catch (e) { if (seq !== RSEQ) return; const rw = $('#readmeWrap'); if (rw) rw.innerHTML = '<div class="card empty">No README found.</div>'; }
 }
 
 async function renderFiles(o, n, path) {
+  const seq = ++RSEQ;
   const full = o + '/' + n;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api('/repos/' + full + '/contents/' + (path ? encodeURIComponent(path).replace(/%2F/g, '/') : '')); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   if (!Array.isArray(items)) { view().innerHTML = '<div class="card empty">Not a folder.</div>'; return; }
   items.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1)));
   let html = path ? '<div class="card crumb">/' + esc(path) + '</div>' : '';
-  html += '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn ghost" id="addFileBtn" style="flex:1">Add file</button><button class="btn ghost" id="upFileBtn" style="flex:1">Upload files</button></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn ghost" id="addFileBtn" style="flex:1">Add file</button><button class="btn ghost" id="upFileBtn" style="flex:1">Upload files</button><button class="btn ghost" id="upDirBtn" style="flex:1">Upload folder</button></div>';
   html += '<input type="file" id="upInput" multiple hidden>';
   html += '<div class="card list">';
   if (path) {
@@ -534,44 +822,83 @@ async function renderFiles(o, n, path) {
     else html += '<div class="lrow" data-act="openfile" data-repo="' + esc(full) + '" data-file="' + esc(it.path) + '">' + SVG.file + '<div class="lmain"><div class="ltitle">' + esc(it.name) + '</div><div class="lsub">' + fmtSize(it.size) + '</div></div></div>';
   });
   html += '</div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
   $('#addFileBtn').addEventListener('click', () => addFileSheet(o, n, path));
   const upi = $('#upInput');
   $('#upFileBtn').addEventListener('click', () => upi.click());
+  const udb = $('#upDirBtn');
+  if (udb) udb.addEventListener('click', () => {
+    if (!(window.OneGit && window.OneGit.pickFolder)) { toast('Folder upload is not available'); return; }
+    folderCtx = { o, n, dir: path || '', jid: null };
+    folderQ = []; folderEnd = false; folderOk = 0; folderFail = 0; folderSkip = 0;
+    try { window.OneGit.pickFolder(); upProgShow('Uploading folder'); upProgUpdate('Scanning folder…', 0); } catch (e) { folderCtx = null; toast('Could not open the folder picker'); }
+  });
   upi.addEventListener('change', async () => {
     const files = Array.from(upi.files || []);
     if (!files.length) return;
-    toast('Uploading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '…');
+    upProgShow('Uploading files');
     let done = 0;
     for (const f of files) {
+      upProgUpdate(f.name + ' · ' + done + ' / ' + files.length, done / files.length * 100);
       try {
         const b64 = await fileToB64(f);
         const p = path ? path + '/' + f.name : f.name;
-        await api('/repos/' + o + '/' + n + '/contents/' + p, { method: 'PUT', body: JSON.stringify({ message: 'Upload ' + f.name, content: b64 }) });
+        const body = { message: 'Upload ' + f.name, content: b64 };
+        const meta = await api('/repos/' + o + '/' + n + '/contents/' + p, { status: true }).catch(() => null);
+        if (meta && meta.ok && meta.data && meta.data.sha) body.sha = meta.data.sha;
+        await api('/repos/' + o + '/' + n + '/contents/' + p, { method: 'PUT', body: JSON.stringify(body) });
         done++;
       } catch (e) { toast('Failed: ' + f.name + ' — ' + e.message); }
     }
-    if (done) { toast('Uploaded ' + done + ' file' + (done > 1 ? 's' : '')); renderFiles(o, n, path); }
+    upProgUpdate('Complete — ' + done + ' of ' + files.length + ' uploaded', 100);
+    setTimeout(upProgHide, 3000);
+    if (done) {
+      try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', done + ' file' + (done === 1 ? '' : 's') + ' uploaded to ' + o + '/' + n); } catch (e) {}
+      renderFiles(o, n, path);
+    }
     upi.value = '';
+  });
+  let lpTimer = null, lpFired = false;
+  view().querySelectorAll('[data-act="openfile"]').forEach(row => {
+    row.addEventListener('pointerdown', () => {
+      lpFired = false;
+      clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => {
+        lpFired = true;
+        try { if (navigator.vibrate) navigator.vibrate(25); } catch (er) {}
+        confirmDeleteFile(row.dataset.repo, row.dataset.file);
+      }, 550);
+    });
+    const cancel = () => clearTimeout(lpTimer);
+    row.addEventListener('pointerup', cancel);
+    row.addEventListener('pointerleave', cancel);
+    row.addEventListener('pointercancel', cancel);
+    row.addEventListener('click', e => { if (lpFired) { e.stopImmediatePropagation(); e.preventDefault(); lpFired = false; } }, true);
   });
 }
 
 async function renderCommits(o, n) {
+  const seq = ++RSEQ;
   const full = o + '/' + n;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api('/repos/' + full + '/commits?per_page=30'); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   if (!items.length) { view().innerHTML = '<div class="card empty">No commits found.</div>'; return; }
+  if (seq !== RSEQ) return;
   view().innerHTML = '<div class="card list">' + items.map(commitRow).join('') + '</div>';
 }
 
 async function renderCommit(o, n, sha) {
+  const seq = ++RSEQ;
   const full = o + '/' + n;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let c;
   try { c = await api('/repos/' + full + '/commits/' + sha); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   const lines = (c.commit && c.commit.message ? c.commit.message : '').split('\n');
   const title = lines[0];
   const rest = lines.slice(1).join('\n').trim();
@@ -605,15 +932,18 @@ async function renderCommit(o, n, sha) {
     }
     html += '</div>';
   });
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
 }
 
 async function renderReleases(o, n) {
+  const seq = ++RSEQ;
   const full = o + '/' + n;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api('/repos/' + full + '/releases?per_page=30'); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   if (!items.length) { view().innerHTML = '<button class="btn ghost btnblock" id="newRelBtn" style="margin-bottom:12px">New release</button><div class="card empty">No releases published yet.<br><span class="dim">Create one above — tag a version, describe it, done.</span></div><input type="file" id="relUpInput" hidden>'; $('#newRelBtn').addEventListener('click', () => newReleaseSheet(o, n)); return; }
   let html = '<button class="btn ghost btnblock" id="newRelBtn" style="margin-bottom:12px">New release</button><input type="file" id="relUpInput" hidden>';
   items.forEach(rl => {
@@ -630,7 +960,8 @@ async function renderReleases(o, n) {
       rl.assets.forEach(a => {
         html += '<div class="lrow" data-act="download" data-url="' + esc(a.browser_download_url) + '" data-name="' + esc(a.name) + '">' + SVG.dl +
           '<div class="lmain"><div class="ltitle">' + esc(a.name) + '</div>' +
-          '<div class="lsub">' + fmtSize(a.size) + ' · ' + nf(a.download_count) + ' downloads</div></div></div>';
+          '<div class="lsub">' + fmtSize(a.size) + ' · ' + nf(a.download_count) + ' downloads</div></div>' +
+          '<button class="iconbtn" data-act="delasset" data-full="' + esc(full) + '" data-aid="' + a.id + '" data-aname="' + esc(a.name) + '" aria-label="delete file">' + SVG.x + '</button></div>';
       });
       html += '</div>';
     }
@@ -641,9 +972,15 @@ async function renderReleases(o, n) {
       '<div class="lrow" data-act="download" data-url="https://github.com/' + full + '/archive/refs/tags/' + esc(rl.tag_name) + '.tar.gz" data-name="' + esc(n + '-' + rl.tag_name + '.tar.gz') + '">' + SVG.dl +
       '<div class="lmain"><div class="ltitle">Source code (tar.gz)</div><div class="lsub">complete snapshot of ' + esc(rl.tag_name) + '</div></div></div>' +
       '</div>' +
-      '<button class="btn sm ghost" data-act="relup" data-relup="' + rl.id + '" style="margin-top:12px">Upload asset</button></div>';
+      '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn sm ghost" data-act="relup" data-relup="' + rl.id + '" style="flex:1">Upload files</button>' +
+      '<button class="btn sm ghost" data-rel="' + rl.id + '" style="flex:1">Edit release</button></div></div>';
   });
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
+  $$('[data-rel]').forEach(b => b.addEventListener('click', () => {
+    const rl = items.find(x => String(x.id) === b.dataset.rel);
+    if (rl) editReleaseSheet(o, n, rl);
+  }));
   $('#newRelBtn').addEventListener('click', () => newReleaseSheet(o, n));
   $('#relUpInput').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0];
@@ -668,16 +1005,20 @@ function cloneSheet(full) {
 }
 
 async function renderRepoIssues(o, n) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api('/repos/' + o + '/' + n + '/issues?state=all&sort=updated&per_page=50'); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   const newBtn = '<button class="btn ghost btnblock" id="newIssueBtn" style="margin-bottom:12px">New issue</button>';
   if (!items.length) {
+    if (seq !== RSEQ) return;
     view().innerHTML = newBtn + '<div class="card empty">No issues yet — nice and quiet.</div>';
     $('#newIssueBtn').addEventListener('click', () => newIssueSheet(o, n));
     return;
   }
+  if (seq !== RSEQ) return;
   view().innerHTML = newBtn + '<div class="card list">' + items.map(issueRow).join('') + '</div>';
   $('#newIssueBtn').addEventListener('click', () => newIssueSheet(o, n));
 }
@@ -785,7 +1126,10 @@ function addFileSheet(o, n, path) {
     try {
       const b64 = btoa(unescape(encodeURIComponent(content)));
       const p = path ? path + '/' + fname : fname;
-      await api('/repos/' + o + '/' + n + '/contents/' + p, { method: 'PUT', body: JSON.stringify({ message: $('#afMsg').value.trim() || ('Create ' + fname), content: b64 }) });
+      const body = { message: $('#afMsg').value.trim() || ('Create ' + fname), content: b64 };
+      const meta = await api('/repos/' + o + '/' + n + '/contents/' + p, { status: true }).catch(() => null);
+      if (meta && meta.ok && meta.data && meta.data.sha) body.sha = meta.data.sha;
+      await api('/repos/' + o + '/' + n + '/contents/' + p, { method: 'PUT', body: JSON.stringify(body) });
       closeSheet(); toast('Committed ' + fname);
       renderFiles(o, n, path);
     } catch (e) { toast('Failed: ' + e.message); $('#afSubmit').disabled = false; }
@@ -821,7 +1165,20 @@ function fileToB64(file) {
     r.readAsDataURL(file);
   });
 }
+let uplSeq = 0; const uplWait = {};
+window.__uplDone = (jid, ok, msg) => { const w = uplWait[jid]; if (w) { delete uplWait[jid]; ok ? w.res(true) : w.rej(new Error(msg || 'upload failed')); } };
 async function uploadAsset(full, id, file) {
+  const viaBridge = () => {
+    const jid = ++uplSeq;
+    return fileToB64(file).then(b64 => new Promise((res, rej) => {
+      uplWait[jid] = { res, rej };
+      try { window.OneGit.uploadAsset(jid, full, String(id), file.name, file.type || 'application/octet-stream', b64); }
+      catch (e) { delete uplWait[jid]; rej(e); }
+    }));
+  };
+  if (window.OneGit && window.OneGit.uploadAsset) {
+    try { return await viaBridge(); } catch (e) { /* fall through to the fetch path */ }
+  }
   const buf = await file.arrayBuffer();
   const res = await fetch('https://uploads.github.com/repos/' + full + '/releases/' + id + '/assets?name=' + encodeURIComponent(file.name), {
     method: 'POST',
@@ -854,6 +1211,125 @@ function editFileSheet(full, path, raw, sha) {
   });
 }
 
+function confirmDeleteFile(full, path) {
+  const name = path.split('/').pop();
+  openSheet('<div class="sheethead"><b>Delete — ' + esc(name) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' + spinner(true));
+  api('/repos/' + full + '/contents/' + encodeURIComponent(path).replace(/%2F/g, '/')).then(meta => {
+    if (meta && meta.sha) deleteFileSheet(full, path, meta.sha);
+    else { closeSheet(); toast('Cannot delete this file'); }
+  }).catch(e => { closeSheet(); toast('Failed: ' + e.message); });
+}
+
+function editReleaseSheet(o, n, rl) {
+  const full = o + '/' + n;
+  const curTag = (rl.tag_name && rl.tag_name.indexOf('untagged-') === 0) ? '' : (rl.tag_name || '');
+  openSheet('<div class="sheethead"><b>Edit release — ' + esc(rl.name || rl.tag_name) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<label class="fldlabel">Tag</label>' +
+    '<input class="fld" id="xrlTag" value="' + esc(curTag) + '" placeholder="v1.0.0" autocomplete="off">' +
+    '<label class="fldlabel" style="margin-top:12px">Release title</label>' +
+    '<input class="fld" id="xrlTitle" value="' + esc(rl.name || rl.tag_name) + '" autocomplete="off">' +
+    '<label class="fldlabel" style="margin-top:12px">Release notes</label>' +
+    '<textarea class="replyta" id="xrlBody">' + esc(rl.body || '') + '</textarea>' +
+    '<button class="btn primary btnblock" id="xrlSave" style="margin-top:16px">Save release</button>' +
+    (rl.draft ? '<label class="fldlabel" style="margin-top:20px">Publish draft</label>' +
+      '<div class="lsub" style="margin-bottom:8px">This release is a draft — only you can see it. Publishing makes it public for everyone, using the tag above.</div>' +
+      '<button class="btn primary btnblock" id="xrlPublish" style="margin-top:10px">Publish release</button>' : '') +
+    '<label class="fldlabel" style="margin-top:20px">Attach files</label>' +
+    '<div class="lsub" style="margin-bottom:8px">Uploads go straight into this release</div>' +
+    '<button class="btn ghost btnblock" id="xrlFiles">Upload files to this release</button>' +
+    '<div id="xrlAssets"></div>' +
+    '<input type="file" id="xrlInput" multiple hidden>');
+  const drawXAssets = () => {
+    const el = $('#xrlAssets');
+    if (!el) return;
+    const as = rl.assets || [];
+    el.innerHTML = as.length ? '<div class="lsub" style="margin-top:12px">Files in this release</div>' + as.map(a =>
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">' +
+      '<div class="lmain" style="flex:1;min-width:0"><div class="ltitle">' + esc(a.name) + '</div>' +
+      '<div class="lsub">' + fmtSize(a.size) + ' · ' + nf(a.download_count) + ' downloads</div></div>' +
+      '<button class="iconbtn" data-act="renasset" data-full="' + esc(full) + '" data-aid="' + a.id + '" data-aname="' + esc(a.name) + '" aria-label="rename">' + SVG.pen + '</button>' +
+      '<button class="iconbtn" data-act="delasset" data-full="' + esc(full) + '" data-aid="' + a.id + '" data-aname="' + esc(a.name) + '" aria-label="delete">' + SVG.x + '</button></div>').join('') : '';
+  };
+  drawXAssets();
+  $('#xrlSave').addEventListener('click', async () => {
+    const tag = ($('#xrlTag').value || '').trim();
+    if (/[^A-Za-z0-9._\-+]/.test(tag)) { toast('Tags cannot contain spaces — use letters, numbers, dots, dashes (e.g. First-Stable)'); return; }
+    const patch = { name: $('#xrlTitle').value.trim() || rl.tag_name, body: $('#xrlBody').value };
+    if (tag && tag !== curTag) patch.tag_name = tag;
+    $('#xrlSave').disabled = true;
+    try {
+      await api('/repos/' + full + '/releases/' + rl.id, { method: 'PATCH', body: JSON.stringify(patch) });
+      closeSheet(); toast('Release updated'); renderReleases(o, n);
+    } catch (e) { toast('Failed: ' + e.message); $('#xrlSave').disabled = false; }
+  });
+  const pb = $('#xrlPublish');
+  if (pb) pb.addEventListener('click', async () => {
+    const tag = ($('#xrlTag').value || '').trim();
+    if (!tag) { toast('Enter a tag like v1.0.0'); return; }
+    if (/[^A-Za-z0-9._\-+]/.test(tag)) { toast('Tags cannot contain spaces — use letters, numbers, dots, dashes (e.g. First-Stable)'); return; }
+    pb.disabled = true;
+    try {
+      await api('/repos/' + full + '/releases/' + rl.id, { method: 'PATCH', body: JSON.stringify({ tag_name: tag, draft: false, prerelease: !!rl.prerelease }) });
+      closeSheet(); toast('Release published'); renderReleases(o, n);
+    } catch (e) { toast('Failed: ' + e.message); pb.disabled = false; }
+  });
+  $('#xrlFiles').addEventListener('click', () => $('#xrlInput').click());
+  $('#xrlInput').addEventListener('change', async e => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    toast('Uploading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '…');
+    let done = 0;
+    for (const f of files) {
+      try { await uploadAsset(full, rl.id, f); done++; }
+      catch (er) { toast('Failed: ' + f.name + ' — ' + er.message); }
+    }
+    toast(done ? 'Uploaded ' + done + ' file' + (done > 1 ? 's' : '') : 'No files uploaded');
+    try {
+      const rels = await api('/repos/' + full + '/releases');
+      const fresh = (rels || []).find(x => x.id === rl.id);
+      if (fresh) rl.assets = fresh.assets || [];
+    } catch (er) {}
+    drawXAssets();
+    renderReleases(o, n);
+  });
+}
+
+function renameAssetSheet(full, aid, name) {
+  openSheet('<div class="sheethead"><b>Rename file</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<label class="fldlabel">File name</label>' +
+    '<input class="fld" id="raName" value="' + esc(name) + '" autocomplete="off" spellcheck="false">' +
+    '<button class="btn primary btnblock" id="raSave" style="margin-top:16px">Rename</button>');
+  $('#raName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#raSave').click(); });
+  $('#raSave').addEventListener('click', async () => {
+    const nn = $('#raName').value.trim();
+    if (!nn) { toast('Enter a file name'); return; }
+    if (nn === name) { closeSheet(); return; }
+    $('#raSave').disabled = true;
+    try {
+      await api('/repos/' + full + '/releases/assets/' + aid, { method: 'PATCH', body: JSON.stringify({ name: nn }) });
+      closeSheet(); toast('Renamed to ' + nn);
+      const parts = full.split('/');
+      renderReleases(parts[0], parts[1]);
+    } catch (e) { toast('Failed: ' + e.message); $('#raSave').disabled = false; }
+  });
+}
+
+function deleteAssetSheet(full, aid, name) {
+  openSheet('<div class="sheethead"><b>Delete file — ' + esc(name) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<p class="dim" style="margin:4px 0 14px">Remove this file from the release? People who already downloaded it keep their copy.</p>' +
+    '<button class="btn danger btnblock" id="daConfirm">Delete file</button>');
+  $('#daConfirm').addEventListener('click', async () => {
+    $('#daConfirm').disabled = true;
+    try {
+      await api('/repos/' + full + '/releases/assets/' + aid, { method: 'DELETE' });
+      closeSheet(); toast('Deleted ' + name);
+      const parts = full.split('/');
+      renderReleases(parts[0], parts[1]);
+    } catch (e) { toast('Failed: ' + e.message); $('#daConfirm').disabled = false; }
+  });
+}
+
 function deleteFileSheet(full, path, sha) {
   const name = path.split('/').pop();
   openSheet('<div class="sheethead"><b>Delete — ' + esc(name) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
@@ -879,16 +1355,50 @@ function newReleaseSheet(o, n) {
     '<label class="fldlabel" style="margin-top:12px">Describe this release</label>' +
     '<textarea class="replyta" id="rlBody" placeholder="What is new in this release…"></textarea>' +
     '<div class="seg" style="margin:16px 0 0"><button class="segb on" data-rls="final">Final</button><button class="segb" data-rls="pre">Pre-release</button><button class="segb" data-rls="draft">Draft</button></div>' +
+    '<label class="fldlabel" style="margin-top:20px">Attach files</label>' +
+    '<div class="lsub" style="margin-bottom:8px">Picked files upload with the release</div>' +
+    '<button class="btn ghost btnblock" id="rlFiles">Choose files</button>' +
+    '<div id="rlFileList" style="margin-top:6px"></div>' +
+    '<input type="file" id="rlInput" multiple hidden>' +
     '<button class="btn primary btnblock" id="rlPublish" style="margin-top:18px">Publish release</button>');
-  let rls = 'final';
+  let rls = 'final', pending = [];
+  const drawFiles = () => {
+    const el = $('#rlFileList');
+    if (!el) return;
+    el.innerHTML = pending.length ? pending.map((f, i) =>
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">' +
+      '<div class="lmain" style="flex:1;min-width:0"><div class="ltitle">' + esc(f.name) + '</div>' +
+      '<div class="lsub">' + (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB') + '</div></div>' +
+      '<button class="iconbtn" data-rmfile="' + i + '" aria-label="remove">' + SVG.x + '</button></div>').join('') : '';
+  };
   $$('[data-rls]').forEach(b => b.addEventListener('click', () => { rls = b.dataset.rls; $$('[data-rls]').forEach(x => x.classList.toggle('on', x === b)); }));
+  $('#rlFiles').addEventListener('click', () => $('#rlInput').click());
+  $('#rlInput').addEventListener('change', e => {
+    pending = pending.concat(Array.from(e.target.files || []));
+    e.target.value = '';
+    drawFiles();
+  });
+  $('#rlFileList').addEventListener('click', e => {
+    const b = e.target.closest('[data-rmfile]');
+    if (b) { pending.splice(+b.dataset.rmfile, 1); drawFiles(); }
+  });
   $('#rlPublish').addEventListener('click', async () => {
     const tag = $('#rlTag').value.trim();
     if (!tag) { toast('Enter a tag like v1.0.0'); return; }
+    if (/[^A-Za-z0-9._\-+]/.test(tag)) { toast('Tags cannot contain spaces — use letters, numbers, dots, dashes (e.g. First-Stable)'); return; }
     $('#rlPublish').disabled = true;
     try {
-      await api('/repos/' + o + '/' + n + '/releases', { method: 'POST', body: JSON.stringify({ tag_name: tag, name: $('#rlTitle').value.trim() || tag, body: $('#rlBody').value, draft: rls === 'draft', prerelease: rls === 'pre' }) });
-      closeSheet(); toast('Release published');
+      const rel = await api('/repos/' + o + '/' + n + '/releases', { method: 'POST', body: JSON.stringify({ tag_name: tag, name: $('#rlTitle').value.trim() || tag, body: $('#rlBody').value, draft: rls === 'draft', prerelease: rls === 'pre' }) });
+      if (pending.length && rel && rel.id) {
+        toast('Release published — uploading ' + pending.length + ' file' + (pending.length > 1 ? 's' : '') + '…');
+        let done = 0;
+        for (const f of pending.slice()) {
+          try { await uploadAsset(o + '/' + n, rel.id, f); done++; }
+          catch (er) { toast('Failed: ' + f.name + ' — ' + er.message); }
+        }
+        toast('Release published with ' + done + ' file' + (done === 1 ? '' : 's'));
+      } else toast('Release published');
+      closeSheet();
       renderReleases(o, n);
     } catch (e) { toast('Failed: ' + e.message); $('#rlPublish').disabled = false; }
   });
@@ -901,7 +1411,9 @@ function editRepoSheet(o, n, r) {
     '<label class="fldlabel" style="margin-top:12px">Homepage</label>' +
     '<input class="fld" id="erHome" value="' + esc(r.homepage || '') + '" placeholder="https://…" autocomplete="off">' +
     '<div class="setrow" style="margin-top:16px"><div class="lmain"><div class="ltitle">Private repository</div><div class="lsub">Only you and collaborators can see it</div></div><button class="switch' + (r.private ? ' on' : '') + '" id="erPriv"></button></div>' +
-    '<button class="btn primary btnblock" id="erSave" style="margin-top:18px">Save changes</button>');
+    '<button class="btn primary btnblock" id="erSave" style="margin-top:18px">Save changes</button>' +
+    '<div class="lsub" style="margin:20px 0 8px;text-align:center">Danger zone</div>' +
+    '<button class="btn danger btnblock" id="erDelete">Delete repository</button>');
   const pv = $('#erPriv');
   pv.addEventListener('click', () => pv.classList.toggle('on'));
   $('#erSave').addEventListener('click', async () => {
@@ -912,16 +1424,98 @@ function editRepoSheet(o, n, r) {
       renderRepo(o, n);
     } catch (e) { toast('Failed: ' + e.message); $('#erSave').disabled = false; }
   });
+  $('#erDelete').addEventListener('click', () => deleteRepoSheet(o, n));
+}
+
+function upProgShow(title) {
+  let el = document.getElementById('upProgCard');
+  if (!el) { el = document.createElement('div'); el.id = 'upProgCard'; document.body.appendChild(el); }
+  el.innerHTML = '<div class="ltitle">' + esc(title) + '</div><div class="lsub" id="upProgSub" style="margin-top:3px"></div><div class="upbar"><i id="upProgBar" style="width:0%"></i></div>';
+}
+function upProgUpdate(sub, pct) {
+  const s = document.getElementById('upProgSub'), b = document.getElementById('upProgBar');
+  if (s) s.textContent = sub;
+  if (b) b.style.width = Math.max(0, Math.min(100, Math.round(pct))) + '%';
+}
+function upProgHide() { const el = document.getElementById('upProgCard'); if (el) el.remove(); }
+let folderCtx = null, folderQ = [], folderBusy = false, folderEnd = false, folderOk = 0, folderFail = 0, folderSkip = 0;
+window.__folderFile = (jid, path, mime, b64) => {
+  if (!folderCtx) return;
+  if (folderCtx.jid === null) folderCtx.jid = jid;
+  if (jid !== folderCtx.jid) return;
+  if (!b64) { folderSkip++; toast('Skipped ' + path + ' — file too large'); return; }
+  folderQ.push({ path, b64 });
+  pumpFolder();
+};
+window.__folderDone = (jid) => {
+  if (!folderCtx) return;
+  if (folderCtx.jid === null) folderCtx.jid = jid;
+  if (jid !== folderCtx.jid) return;
+  folderEnd = true;
+  pumpFolder();
+};
+async function pumpFolder() {
+  if (folderBusy) return;
+  folderBusy = true;
+  while (folderQ.length) {
+    const f = folderQ.shift();
+    const done = folderOk + folderFail + folderSkip;
+    const total = folderEnd ? done + folderQ.length + 1 : 0;
+    upProgUpdate(total ? (done + 1) + ' / ' + total + ' · ' + f.path : (done ? done + ' done · ' : '') + f.path, total ? done / total * 100 : 0);
+    try {
+      const p = folderCtx.dir ? folderCtx.dir + '/' + f.path : f.path;
+      const body = { message: 'Upload ' + f.path, content: f.b64 };
+      const meta = await api('/repos/' + folderCtx.o + '/' + folderCtx.n + '/contents/' + p, { status: true }).catch(() => null);
+      if (meta && meta.ok && meta.data && meta.data.sha) body.sha = meta.data.sha;
+      await api('/repos/' + folderCtx.o + '/' + folderCtx.n + '/contents/' + p, { method: 'PUT', body: JSON.stringify(body) });
+      folderOk++;
+    } catch (e) { folderFail++; toast('Failed: ' + f.path + ' — ' + e.message); }
+  }
+  if (folderEnd) {
+    const ctx = folderCtx;
+    folderCtx = null;
+    const summary = folderOk + ' file' + (folderOk === 1 ? '' : 's') + ' uploaded' + (folderFail ? ' · ' + folderFail + ' failed' : '');
+    if (folderOk) {
+      upProgUpdate('Complete — ' + summary, 100);
+      setTimeout(upProgHide, 3000);
+      try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', summary + ' to ' + ctx.o + '/' + ctx.n); } catch (e) {}
+      renderFiles(ctx.o, ctx.n, ctx.dir);
+    } else upProgHide();
+    folderQ = []; folderEnd = false; folderOk = 0; folderFail = 0; folderSkip = 0;
+  }
+  folderBusy = false;
+}
+
+function deleteRepoSheet(o, n) {
+  openSheet('<div class="sheethead"><b>Delete repository — ' + esc(n) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<p class="dim" style="margin:4px 0 14px">This permanently deletes ' + esc(o + '/' + n) + ' — every file, issue, pull request, star and setting is gone for good. This cannot be undone, not even on GitHub.</p>' +
+    '<label class="fldlabel">Type ' + esc(n) + ' to confirm</label>' +
+    '<input class="fld" id="drConfirm" placeholder="' + esc(n) + '" autocomplete="off" spellcheck="false">' +
+    '<button class="btn danger btnblock" id="drGo" style="margin-top:16px">Delete this repository</button>');
+  $('#drConfirm').addEventListener('keydown', e => { if (e.key === 'Enter') $('#drGo').click(); });
+  $('#drGo').addEventListener('click', async () => {
+    if ($('#drConfirm').value.trim() !== n) { toast('Type ' + n + ' to confirm'); return; }
+    $('#drGo').disabled = true;
+    try {
+      await api('/repos/' + o + '/' + n, { method: 'DELETE' });
+      closeSheet();
+      toast('Deleted ' + o + '/' + n);
+      pins = pins.filter(p => p.full_name !== o + '/' + n); LS.set('pins', pins); queueSync();
+      location.hash = '#/repos';
+    } catch (e) { toast('Failed: ' + e.message); $('#drGo').disabled = false; }
+  });
 }
 
 /* ================= views: issue / PR detail ================= */
 async function renderIssue(o, n, num) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let iss, comments;
   try {
     iss = await api('/repos/' + o + '/' + n + '/issues/' + num, { accept: 'application/vnd.github.html+json' });
     comments = await api('/repos/' + o + '/' + n + '/issues/' + num + '/comments?per_page=50', { accept: 'application/vnd.github.html+json' });
-  } catch (e) { view().innerHTML = errCard(e); return; }
+  } catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   const isPR = !!iss.pull_request;
   let html = '<div class="card issuehead"><div class="chips">' +
     '<span class="chip ' + (iss.state === 'open' ? 'ok' : 'closed') + '">' + (iss.state === 'open' ? 'Open' : 'Closed') + '</span>' +
@@ -938,6 +1532,7 @@ async function renderIssue(o, n, num) {
       '<div class="md">' + (c.body_html ? fixMd(c.body_html) : '') + '</div></div>';
   });
   html += '<div class="card reply"><textarea id="replyText" placeholder="Write a comment…"></textarea><button class="btn primary" id="replyBtn">Comment</button></div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
   const sb = $('#stateBtn');
   if (sb) sb.addEventListener('click', async () => {
@@ -964,6 +1559,8 @@ async function renderIssue(o, n, num) {
 /* ================= views: global issues + PRs ================= */
 let IS = { type: 'issues', state: 'open', filter: 'created' };
 async function renderIssues() {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = '<button class="btn ghost btnblock" id="giNew" style="margin-bottom:12px">New issue</button>' +
     '<div class="seg sm"><button class="segb' + (IS.type === 'issues' ? ' on' : '') + '" data-it="issues">Issues</button>' +
     '<button class="segb' + (IS.type === 'prs' ? ' on' : '') + '" data-it="prs">Pull requests</button></div>' +
@@ -979,23 +1576,35 @@ async function renderIssues() {
   loadIssues();
 }
 async function loadIssues() {
+  const seq = ++RSEQ;
   const list = $('#issueList'); if (!list) return;
+  const paintIssues = items => {
+    const it = (items || []).filter(i => IS.type === 'prs' ? !!i.pull_request : !i.pull_request);
+    if (seq !== RSEQ) return;
+    list.innerHTML = it.length ? '<div class="card list">' + it.map(issueRow).join('') + '</div>' :
+      '<div class="card empty">No ' + (IS.type === 'prs' ? 'pull requests' : 'issues') + ' here.</div>';
+  };
+  const ic = cached('/issues?filter=' + IS.filter + '&state=' + IS.state + '&sort=updated&direction=desc&per_page=60');
+  if (ic && Array.isArray(ic)) paintIssues(ic);
   try {
     let items = await api('/issues?filter=' + IS.filter + '&state=' + IS.state + '&sort=updated&direction=desc&per_page=60');
     items = items.filter(i => IS.type === 'prs' ? !!i.pull_request : !i.pull_request);
+    if (seq !== RSEQ) return;
     list.innerHTML = items.length ? '<div class="card list">' + items.map(issueRow).join('') + '</div>' :
       '<div class="card empty">No ' + (IS.type === 'prs' ? 'pull requests' : 'issues') + ' here.</div>';
-  } catch (e) { list.innerHTML = errCard(e); }
+  } catch (e) { if (seq !== RSEQ) return; list.innerHTML = errCard(e); }
 }
 
 /* ================= views: notifications ================= */
 let NT = { all: false };
 async function renderNotifs() {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = '<div class="seg sm"><button class="segb' + (NT.all ? '' : ' on') + '" data-ns="unread">Unread</button><button class="segb' + (NT.all ? ' on' : '') + '" data-ns="all">All</button></div>' +
     '<button class="btn ghost btnblock" id="markAll" style="margin-bottom:12px">Mark all as read</button><div id="notifList">' + spinner() + '</div>';
   $$('[data-ns]').forEach(b => b.addEventListener('click', () => { NT.all = b.dataset.ns === 'all'; renderNotifs(); }));
   let items;
-  try { items = await api('/notifications?per_page=50' + (NT.all ? '&all=true' : '')); } catch (e) { $('#notifList').innerHTML = errCard(e); return; }
+  try { items = await api('/notifications?per_page=50' + (NT.all ? '&all=true' : '')); } catch (e) { if (seq !== RSEQ) return; $('#notifList').innerHTML = errCard(e); return; }
   let html = '';
   if (!items.length) html = '<div class="card empty">All caught up — nothing new.</div>';
   else {
@@ -1007,7 +1616,8 @@ async function renderNotifs() {
     });
     html += '</div>';
   }
-  $('#notifList').innerHTML = html;
+  const nl = $('#notifList');
+  if (nl && seq === RSEQ) nl.innerHTML = html;
   $('#markAll').addEventListener('click', async () => {
     try { await api('/notifications', { method: 'PUT' }); toast('All marked as read'); renderNotifs(); } catch (e) { toast('Failed: ' + e.message); }
   });
@@ -1015,15 +1625,19 @@ async function renderNotifs() {
 
 /* ================= views: user profile ================= */
 async function renderUser(login) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
-  let u, repos, followState = null;
+  let u = cached('/users/' + login) || null, repos = cached('/users/' + login + '/repos?per_page=100&sort=pushed') || null, followState = null;
   const self = USER && USER.login.toLowerCase() === login.toLowerCase();
-  try { u = await api('/users/' + login); } catch (e) { view().innerHTML = errCard(e); return; }
+  if (u) api('/users/' + login).catch(() => {});
+  if (!u) { try { u = await api('/users/' + login); } catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; } }
   if (!self) { const f = await api('/user/following/' + login, { status: true }).catch(() => null); followState = f ? f.status === 204 : null; }
-  try { repos = await api('/users/' + login + '/repos?per_page=100&sort=pushed'); } catch (e) { repos = []; }
+  if (repos) api('/users/' + login + '/repos?per_page=100&sort=pushed').catch(() => {});
+  else { try { repos = await api('/users/' + login + '/repos?per_page=100&sort=pushed'); } catch (e) { repos = []; } }
   repos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
   const top = repos.slice(0, 8);
-  let html = '<div class="card profile"><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
+  let html = '<div class="card profile"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
     '<div class="pname">' + esc(u.name || u.login) + '</div>' +
     '<div class="plogin">@' + esc(u.login) + (u.type === 'Organization' ? ' · organization' : '') + '</div>' +
     (u.bio ? '<p class="pbio">' + esc(u.bio) + '</p>' : '') +
@@ -1037,10 +1651,11 @@ async function renderUser(login) {
   } else {
     html += '<button class="btn ghost" id="editProfBtn" style="margin-top:14px">Edit profile</button>';
   }
-  html += '<div class="linkrow"><button class="btn sm ghost" data-go="#/user/' + esc(u.login) + '/gists">Gists · ' + nf(u.public_gists) + '</button><button class="btn sm ghost" data-act="ext" data-url="' + esc(u.html_url) + '">Open on GitHub</button></div>';
+  html += '<div class="linkrow"><button class="btn sm ghost" data-act="ext" data-url="' + esc(u.html_url) + '">Open on GitHub</button></div>';
   html += '</div>';
   html += '<h2 class="sect">Popular repositories</h2>';
   html += top.length ? top.map(repoRow).join('') : '<div class="card empty">No public repositories.</div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
   const fb = $('#followBtn');
   if (fb) fb.addEventListener('click', async () => {
@@ -1061,10 +1676,13 @@ async function renderUser(login) {
 
 /* ================= views: user lists (followers / following) ================= */
 async function renderUserList(login, which) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api('/users/' + login + '/' + which + '?per_page=80'); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
+  if (seq !== RSEQ) return;
   view().innerHTML = items.length ? '<div class="card list">' + items.map(u =>
     '<div class="lrow" data-go="#/user/' + esc(u.login) + '">' +
     '<img class="cav" src="' + esc(u.avatar_url) + '" alt="">' +
@@ -1075,11 +1693,14 @@ async function renderUserList(login, which) {
 
 /* ================= views: gists ================= */
 async function renderGists(login) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let items;
   try { items = await api(login ? '/users/' + login + '/gists?per_page=30' : '/gists?per_page=30'); }
-  catch (e) { view().innerHTML = errCard(e); return; }
+  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   if (!items.length) { view().innerHTML = (login ? '' : '<button class="btn ghost btnblock" id="newGistBtn" style="margin-bottom:12px">New gist</button>') + '<div class="card empty">No gists yet.</div>'; if (!login) $('#newGistBtn').addEventListener('click', newGistSheet); return; }
+  if (seq !== RSEQ) return;
   view().innerHTML = (login ? '' : '<button class="btn ghost btnblock" id="newGistBtn" style="margin-bottom:12px">New gist</button>') + '<div class="card list">' + items.map(g => {
     const files = Object.keys(g.files || {});
     const label = g.description || files[0] || 'gist';
@@ -1090,9 +1711,11 @@ async function renderGists(login) {
 }
 
 async function renderGist(id) {
+  const seq = ++RSEQ;
+  if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let g;
-  try { g = await api('/gists/' + id); } catch (e) { view().innerHTML = errCard(e); return; }
+  try { g = await api('/gists/' + id); } catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
   const files = Object.values(g.files || {});
   let html = '<div class="card"><div class="rcname">' + esc(g.description || 'Gist') + '</div>' +
     '<div class="rcmeta">' + (g.owner ? esc(g.owner.login) : 'anonymous') + ' · ' + tAgo(g.updated_at) + (g.public ? '' : ' · secret gist') + '</div></div>';
@@ -1102,6 +1725,7 @@ async function renderGist(id) {
       (f.truncated ? '<div class="lsub" style="margin-top:8px">File too large to show here.</div>' :
         '<pre class="filepre">' + esc(f.content || '') + '</pre>') + '</div>';
   });
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
 }
 
@@ -1120,25 +1744,30 @@ function langBars(langs) {
 /* ================= views: settings ================= */
 let STAB = 'general';
 function renderSettings() {
+  const seq = ++RSEQ;
   const u = USER || {};
   let html = '<div class="seg" id="setSeg" style="margin-bottom:16px"><button class="segb' + (STAB === 'credits' ? '' : ' on') + '" data-st="general">Settings</button><button class="segb' + (STAB === 'credits' ? ' on' : '') + '" data-st="credits">Credits</button></div>';
   const wireTabs = () => $$('[data-st]').forEach(b => b.addEventListener('click', () => { STAB = b.dataset.st; renderSettings(); }));
   if (STAB === 'credits') {
     html += '<div class="card" style="text-align:center;padding:28px 20px">' +
       '<div style="font-size:34px;font-weight:800;letter-spacing:-0.5px">OneGit</div>' +
-      '<div class="lsub" style="margin-top:6px">Version 2.4 · A One UI 9-inspired GitHub client</div>' +
-      '<div class="lsub dim" style="margin-top:2px">Syncs via your GitHub account · Not affiliated with GitHub or Samsung</div></div>' +
+      '<ul class="creditslist" style="list-style:none;text-align:left;margin:16px auto 0;padding:0;max-width:290px">' +
+      '<li class="lsub" style="padding:7px 0 7px 18px;position:relative;border-bottom:1px solid var(--divider)">Version ' + APPV + '</li>' +
+      '<li class="lsub" style="padding:7px 0 7px 18px;position:relative;border-bottom:1px solid var(--divider)">Syncs via your GitHub account</li>' +
+      '<li class="lsub" style="padding:7px 0 7px 18px;position:relative">Not affiliated with GitHub</li></ul></div>' +
       '<h2 class="sect">Developer</h2>' +
-      '<div class="card">' +
-      '<div class="setrow"><div class="lmain"><div class="ltitle">Name</div><div class="lsub">BonkerUnkil (Bonki)</div></div></div>' +
-      '<div class="setrow"><div class="lmain"><div class="ltitle">Age</div><div class="lsub">20</div></div></div>' +
-      '<div class="setrow"><div class="lmain"><div class="ltitle">Profession</div><div class="lsub">Coding, problem solving, and more</div></div></div></div>' +
+      '<div class="card" style="text-align:center">' +
+      '<img src="logo.jpg" alt="BonkerUnkil (Bonki)" style="width:96px;height:96px;border-radius:32px;margin:0 auto 16px;box-shadow:0 8px 28px var(--glow)">' +
+      '<div style="padding:8px 0;border-bottom:1px solid var(--divider)"><div class="ltitle">Name</div><div class="lsub" style="margin-top:2px">BonkerUnkil (Bonki)</div></div>' +
+      '<div style="padding:8px 0;border-bottom:1px solid var(--divider)"><div class="ltitle">Age</div><div class="lsub" style="margin-top:2px">20</div></div>' +
+      '<div style="padding:8px 0"><div class="ltitle">Profession</div><div class="lsub" style="margin-top:2px">Coding, problem solving, and more</div></div></div>' +
       '<h2 class="sect">Connect</h2>' +
       '<div class="card">' +
       '<button class="btn ghost btnblock" data-act="ext" data-url="https://t.me/BonkerUnkilBonki" style="display:flex;align-items:center;justify-content:flex-start;gap:12px">' + SVG.telegram + '<span>Telegram · @BonkerUnkilBonki</span></button>' +
       '<button class="btn ghost btnblock" data-act="ext" data-url="https://github.com/BonkerUnkilBonki" style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-top:8px">' + SVG.github + '<span>GitHub · @BonkerUnkilBonki</span></button></div>' +
       '<h2 class="sect">Languages used</h2>' +
       '<div class="card"><div class="chips"><span class="chip">HTML</span><span class="chip">CSS</span><span class="chip">JavaScript</span><span class="chip">Java</span></div></div>';
+    if (seq !== RSEQ) return;
     view().innerHTML = html;
     wireTabs();
     return;
@@ -1161,6 +1790,15 @@ function renderSettings() {
     (curA === 'custom' ? '<div class="colorrow"><input type="color" id="colorPick" value="' + (curCustom || '#1B6EF3') + '"><input class="fld" id="colorHex" value="' + (curCustom || '#1B6EF3') + '" maxlength="7" spellcheck="false"><button class="btn primary" id="colorApply">Apply</button></div>' : '') + '</div>';
   html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Glow effects</div><div class="lsub">Neon glows on buttons, cards and highlights. Turn off for a flat, battery-friendlier look.</div></div>' +
     '<button class="switch' + (LS.get('glow', true) ? ' on' : '') + '" id="glowSw" aria-label="glow effects"></button></div></div>';
+  html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Navigation glow</div><div class="lsub">Adds an accent-colored glow around the bottom navigation bar and its active tab. Off by default for a cleaner look.</div></div>' +
+    '<button class="switch' + (LS.get('navglow', false) ? ' on' : '') + '" id="navglowSw" aria-label="navigation glow"></button></div></div>';
+  html += '<h2 class="sect">App updates</h2>';
+  html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Auto-download app updates</div><div class="lsub">When you publish a new OneGit release on GitHub, the update APK is downloaded to your Downloads folder automatically.</div></div>' +
+    '<button class="switch' + (LS.get('autodl', false) ? ' on' : '') + '" id="autodlSw" aria-label="auto download updates"></button></div>' +
+    '<div style="display:flex;gap:10px;align-items:center;padding:12px 0 2px;margin-top:12px;border-top:1px solid var(--divider)">' +
+    '<div class="lmain" style="flex:1"><div class="ltitle">Installed</div><div class="lsub">Version ' + APPV + '</div></div>' +
+    '<div class="lmain" style="flex:1;text-align:right"><div class="ltitle" id="updLatest">Checking…</div><div class="lsub">latest on GitHub</div></div></div>' +
+    '<div id="updInfo"></div></div>';
   html += '<h2 class="sect">Notifications</h2>';
   html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">GitHub activity alerts</div><div class="lsub">System notifications for new issues, pull requests, mentions, reviews, releases and CI results on repos you watch or participate in. Checked in the background roughly every 15 minutes — works even when the app is closed.</div></div>' +
     '<button class="switch' + (LS.get('notify', true) ? ' on' : '') + '" id="notifSw" aria-label="notifications"></button></div></div>';
@@ -1178,6 +1816,7 @@ function renderSettings() {
   } else html += '<div class="card empty">Nothing pinned yet.</div>';
   html += '<h2 class="sect">Account</h2>';
   html += '<div class="card"><button class="btn danger btnblock" id="logoutBtn">Sign out</button></div>';
+  if (seq !== RSEQ) return;
   view().innerHTML = html;
   wireTabs();
   $$('[data-thm]').forEach(b => b.addEventListener('click', () => {
@@ -1211,6 +1850,40 @@ function renderSettings() {
     LS.set('glow', on); applyTheme(); queueSync();
     toast(on ? 'Glow effects on' : 'Glow effects off');
   });
+  const nsw = $('#navglowSw');
+  if (nsw) nsw.addEventListener('click', () => {
+    const on = !nsw.classList.contains('on');
+    nsw.classList.toggle('on', on);
+    LS.set('navglow', on); applyTheme(); queueSync();
+    toast(on ? 'Navigation glow on' : 'Navigation glow off');
+  });
+  const adw = $('#autodlSw');
+  if (adw) adw.addEventListener('click', () => {
+    const on = !adw.classList.contains('on');
+    adw.classList.toggle('on', on);
+    LS.set('autodl', on); queueSync();
+    toast(on ? 'Auto-download updates on' : 'Auto-download updates off');
+  });
+  const latestEl = $('#updLatest'), infoEl = $('#updInfo');
+  if (latestEl) {
+    api('/repos/' + UPD_REPO + '/releases/latest').then(rel => {
+      if (!latestEl.isConnected) return;
+      const tag = String((rel && rel.tag_name) || '').replace(/^v/, '');
+      latestEl.textContent = tag ? 'v' + tag : 'not found';
+      if (!infoEl || !tag) return;
+      if (newerVersion(tag, APPV)) {
+        const asset = (rel.assets || []).find(a => /\.apk$/i.test(a.name || ''));
+        infoEl.innerHTML = '<div class="lsub" style="padding:10px 0 4px">Update available — v' + esc(tag) + (rel.name ? ' · ' + esc(rel.name) : '') + '</div>' +
+          (asset ? '<div class="lrow" data-act="download" data-url="' + esc(asset.browser_download_url) + '" data-name="' + esc(asset.name) + '" style="padding:10px 0">' + SVG.dl +
+          '<div class="lmain"><div class="ltitle">' + esc(asset.name) + '</div><div class="lsub">' + fmtSize(asset.size) + ' · tap to download the update</div></div></div>' : '') +
+          '<button class="btn ghost btnblock" id="updPopup" style="margin-top:10px">Show update popup</button>';
+        const pu = $('#updPopup');
+        if (pu) pu.addEventListener('click', () => { showUpdateCard(tag, rel.name, asset); });
+      } else {
+        infoEl.innerHTML = '<div class="lsub" style="padding:10px 0 4px">You are on the latest version.</div>';
+      }
+    }).catch(() => { if (latestEl.isConnected) latestEl.textContent = 'check failed'; });
+  }
   $('#logoutBtn').addEventListener('click', () => doLogout('Signed out'));
   const notifSw = $('#notifSw');
   if (notifSw) notifSw.addEventListener('click', () => {
@@ -1249,8 +1922,13 @@ const ACTIONS = {
       }
       const card = $('.sheetcard');
       if (card) {
+        const MAX = 60000;
+        let shown = raw, cut = false;
+        if (raw.length > MAX) { shown = raw.slice(0, MAX); cut = true; }
+        const lines = shown.split('\n');
+        if (lines.length > 2000) { shown = lines.slice(0, 2000).join('\n'); cut = true; }
         card.innerHTML = '<div class="sheethead"><b>' + esc(path) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
-          '<pre class="filepre">' + esc(raw || '(empty file)') + '</pre>';
+          '<pre class="filepre">' + esc(shown || '(empty file)') + (cut ? '\n\n… — this file is large, showing the first ' + nf(Math.min(raw.length, MAX)) + ' characters.' : '') + '</pre>';
         if (raw) {
           card.innerHTML += '<div style="display:flex;gap:8px;margin-top:12px">' +
             '<button class="btn ghost" id="editFileBtn" style="flex:1">Edit</button>' +
@@ -1262,6 +1940,8 @@ const ACTIONS = {
     } catch (e) { closeSheet(); toast('Cannot open this file'); }
   },
   relup: el => { window._relTarget = el.dataset.relup; const inp = $('#relUpInput'); if (inp) inp.click(); },
+  delasset: el => { deleteAssetSheet(el.dataset.full, el.dataset.aid, el.dataset.aname); },
+  renasset: el => { renameAssetSheet(el.dataset.full, el.dataset.aid, el.dataset.aname); },
   closesheet: () => closeSheet(),
   synctoast: () => syncPush(false),
   syncrestore: () => syncRestore(false),
