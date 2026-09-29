@@ -10,7 +10,7 @@ let TOKEN = LS.get('token', null);
 let RSEQ = 0;
 let lastOfflineToast = 0;
 const API_MEM = {};
-const APPV = '2.34';
+const APPV = '2.50';
 const UPD_REPO = 'BonkerUnkilBonki/OneGit';
 let USER = null;
 let pins = LS.get('pins', []);
@@ -150,7 +150,7 @@ function applyTheme() {
   }
 }
 
-/* ================= font (bundled OneGit Sans everywhere) ================= */
+/* ================= font (bundled app font everywhere) ================= */
 function applyFont() { document.body.style.fontFamily = "'OneGitSans', system-ui, sans-serif"; }
 
 /* ================= pins ================= */
@@ -179,8 +179,8 @@ async function syncPush(silent) {
   try {
     const files = { 'onegit-sync.json': { content: JSON.stringify(payload, null, 2) } };
     if (!gistId) {
-      const g = await api('/gists', { method: 'POST', body: JSON.stringify({ description: 'OneGit sync file (auto-generated) — do not delete', public: false, files }) });
-      gistId = g.id; LS.set('gistId', gistId);
+      const g = await api('/gists', { method: 'POST', body: JSON.stringify({ description: 'Gitly sync file (auto-generated) — do not delete', public: false, files }) });
+      gistId = g.id; LS.set('gistId', gistId); saveGistToAccount();
     } else {
       await api('/gists/' + gistId, { method: 'PATCH', body: JSON.stringify({ files }) });
     }
@@ -195,7 +195,7 @@ async function syncRestore(silent) {
     if (!g) {
       const list = await api('/gists?per_page=100');
       g = list.find(x => x.files && x.files['onegit-sync.json']);
-      if (g) { gistId = g.id; LS.set('gistId', gistId); }
+      if (g) { gistId = g.id; LS.set('gistId', gistId); saveGistToAccount(); }
     }
     if (!g || !g.files['onegit-sync.json']) { if (!silent) toast('No sync data found on GitHub'); return false; }
     const d = JSON.parse(g.files['onegit-sync.json'].content);
@@ -229,7 +229,7 @@ function showUpdateCard(tag, name, asset) {
   const el = document.createElement('div');
   el.id = 'updCard';
   el.innerHTML = '<div class="updrow"><div class="lmain"><div class="ltitle">Update available \u00b7 v' + esc(tag) + '</div>' +
-    '<div class="lsub">' + (name ? esc(name) + ' \u00b7 ' : '') + 'a new OneGit release is on GitHub</div></div>' +
+    '<div class="lsub">' + (name ? esc(name) + ' \u00b7 ' : '') + 'a new Gitly release is on GitHub</div></div>' +
     '<button class="btn sm primary" id="updGet">Update</button>' +
     '<button class="iconbtn" id="updX" aria-label="dismiss">\u2715</button></div>';
   document.body.appendChild(el);
@@ -237,7 +237,7 @@ function showUpdateCard(tag, name, asset) {
   setTimeout(kill, 20000);
   $('#updGet').addEventListener('click', () => {
     if (asset && window.OneGit && window.OneGit.download) {
-      try { window.OneGit.download(asset.browser_download_url, asset.name); toast('Downloading OneGit v' + tag); }
+      try { window.OneGit.download(asset.browser_download_url, asset.name); toast('Downloading Gitly v' + tag); }
       catch (e) { location.href = 'https://github.com/' + UPD_REPO + '/releases/latest'; }
     } else location.href = 'https://github.com/' + UPD_REPO + '/releases/latest';
     kill();
@@ -265,13 +265,74 @@ async function checkUpdate() {
 
 /* ================= auth ================= */
 function doLogout(msg) {
+  let next = null;
+  if (USER && USER.login) {
+    const accs = getAccounts().filter(a => a.login !== USER.login);
+    saveAccounts(accs);
+    next = accs.length ? accs[0] : null;
+  }
+  if (next) { toast(msg || ('Signed out — switched to ' + next.login)); switchAccount(next.login); return; }
   TOKEN = null; USER = null; LS.del('token');
   try { if (window.OneGit && window.OneGit.saveToken) window.OneGit.saveToken(''); } catch (e) {}
   try { if (window.OneGit && window.OneGit.setNotifications) window.OneGit.setNotifications(false); } catch (e) {}
   if (msg) toast(msg); showLogin();
 }
 function saveTokenNative() { try { if (TOKEN && window.OneGit && window.OneGit.saveToken) window.OneGit.saveToken(TOKEN); } catch (e) {} }
-function showLogin() { $('#app').hidden = true; $('#login').hidden = false; }
+function showLogin() {
+  $('#app').hidden = true; $('#login').hidden = false;
+  let cb = document.getElementById('loginCancel');
+  if (!cb) {
+    cb = document.createElement('button');
+    cb.id = 'loginCancel';
+    cb.className = 'btn ghost';
+    cb.style.cssText = 'display:block;margin:18px auto 0;width:180px';
+    cb.textContent = 'Cancel';
+    cb.addEventListener('click', () => { $('#login').hidden = true; $('#app').hidden = false; route(); });
+    const card = document.querySelector('#login .logincard');
+    if (card) card.appendChild(cb);
+  }
+  cb.hidden = !TOKEN;
+}
+
+/* ================= accounts (multi-account) ================= */
+function getAccounts() { return LS.get('accounts', []); }
+function saveAccounts(a) { LS.set('accounts', a); }
+function addAccount(login, token, avatar) {
+  const accs = getAccounts();
+  const i = accs.findIndex(a => a.login === login);
+  const rec = { login, token, avatar: avatar || '', gistId: i >= 0 ? accs[i].gistId : null, pins: i >= 0 ? accs[i].pins : null };
+  if (i >= 0) accs[i] = rec; else accs.push(rec);
+  saveAccounts(accs);
+  return rec;
+}
+function saveGistToAccount() {
+  if (!USER) return;
+  const accs = getAccounts();
+  const i = accs.findIndex(a => a.login === USER.login);
+  if (i >= 0) { accs[i].gistId = gistId; accs[i].pins = pins; if (!accs[i].avatar && USER.avatar_url) accs[i].avatar = USER.avatar_url; saveAccounts(accs); }
+}
+function accountCachesClear() {
+  try { Object.keys(localStorage).filter(k => k.indexOf('onegit.c.') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+}
+function switchAccount(login) {
+  const accs = getAccounts();
+  const acc = accs.find(a => a.login === login);
+  if (!acc || acc.token === TOKEN) return;
+  const out = accs.find(a => a.token === TOKEN);
+  if (out) out.pins = pins;
+  const keep = acc.pins || [];
+  saveAccounts(accs);
+  TOKEN = acc.token; USER = null;
+  LS.set('token', TOKEN);
+  gistId = acc.gistId || null; LS.set('gistId', gistId);
+  pins = keep; LS.set('pins', pins);
+  accountCachesClear();
+  saveTokenNative();
+  try { if (window.OneGit && window.OneGit.setNotifications) window.OneGit.setNotifications(LS.get('notify', true)); } catch (e) {}
+  toast('Switched to ' + login);
+  location.hash = '#/home';
+  route();
+}
 
 /* ================= router ================= */
 const view = () => $('#view');
@@ -286,16 +347,39 @@ const ROUTES = [
   { re: /^#\/repo\/([^\/]+)\/([^\/]+)\/issues$/, tab: 1, detail: true, title: () => 'Issues', sub: m => m[1] + ' / ' + m[2], render: m => renderRepoIssues(m[1], m[2]) },
   { re: /^#\/repo\/([^\/]+)\/([^\/]+)$/, tab: 1, detail: true, title: m => m[2], sub: m => m[1] + ' / ' + m[2], render: m => renderRepo(m[1], m[2]) },
   { re: /^#\/commit\/([^\/]+)\/([^\/]+)\/([0-9a-fA-F]{6,40})$/, tab: -1, detail: true, title: () => 'Commit', sub: m => m[1] + ' / ' + m[2], render: m => renderCommit(m[1], m[2], m[3]) },
+  { re: /^#\/commitfile\/([^\/]+)\/([^\/]+)\/([0-9a-fA-F]{6,40})\/(.+)$/, tab: -1, detail: true, title: m => decodeURIComponent(m[4]).split('/').pop(), sub: m => m[1] + ' / ' + m[2] + ' \u00b7 ' + m[3].slice(0, 7), render: m => renderCommitFile(m[1], m[2], m[3], decodeURIComponent(m[4])) },
   { re: /^#\/issue\/([^\/]+)\/([^\/]+)\/(\d+)$/, tab: -1, detail: true, title: m => (m[4] === 'pr' ? 'PR #' : 'Issue #') + m[3], sub: m => m[1] + ' / ' + m[2], render: m => renderIssue(m[1], m[2], +m[3]) },
   { re: /^#\/user\/([^\/]+)$/, tab: -1, detail: true, title: m => '@' + m[1], sub: () => 'GitHub profile', render: m => renderUser(m[1]) },
-  { re: /^#\/issues$/, tab: 2, detail: false, title: () => 'Issues', sub: () => 'Issues and pull requests', render: renderIssues },
+  { re: /^#\/profile\/([^\/]+)$/, tab: -1, detail: true, title: () => 'Profile README', big: m => '@' + m[1], sub: () => '', render: m => renderProfileReadme(m[1]) },
+  { re: /^#\/commits$/, tab: 2, detail: false, title: () => 'Commits', sub: () => 'Your commits across every repository', render: renderCommitsHome },
+  { re: /^#\/issues$/, tab: -1, detail: false, title: () => 'Issues', sub: () => 'Issues and pull requests', render: renderIssues },
   { re: /^#\/notifs$/, tab: -1, detail: false, title: () => 'Notifications', sub: () => 'Your unread threads', render: renderNotifs },
   { re: /^#\/users\/([^\/]+)\/(followers|following)$/, tab: -1, detail: true, title: m => m[2][0].toUpperCase() + m[2].slice(1), sub: m => '@' + m[1], render: m => renderUserList(m[1], m[2]) },
   { re: /^#\/user\/([^\/]+)\/gists$/, tab: -1, detail: true, title: () => 'Gists', sub: m => '@' + m[1], render: m => renderGists(m[1]) },
   { re: /^#\/gist\/([0-9a-f]+)$/, tab: -1, detail: true, title: () => 'Gist', sub: () => 'Snippet files', render: m => renderGist(m[1]) },
   { re: /^#\/gists$/, tab: -1, detail: true, title: () => 'Your gists', sub: () => 'Snippets on your account', render: () => renderGists() },
-  { re: /^#\/settings$/, tab: -1, detail: false, title: () => 'Settings', sub: () => 'Make OneGit yours', render: renderSettings }
+  { re: /^#\/settings$/, tab: -1, detail: false, title: () => 'Settings', sub: () => 'Make Gitly yours', render: renderSettings }
 ];
+
+/* scales the big header title down so long names fit on one line
+   (34px down to a 22px floor); anything longer wraps at word
+   boundaries instead of breaking mid-word */
+function fitBigTitle() {
+  const el = $('#bigTitle');
+  if (!el) return;
+  el.style.fontSize = '';
+  const text = el.textContent || '';
+  if (!text) return;
+  const w = el.clientWidth;
+  if (!w) return;
+  try {
+    const c = fitBigTitle._m || (fitBigTitle._m = document.createElement('canvas').getContext('2d'));
+    c.font = '700 34px OneGitSans, system-ui, sans-serif';
+    const full = c.measureText(text).width;
+    if (full <= w) return;
+    el.style.fontSize = Math.max(22, Math.floor(34 * w / full)) + 'px';
+  } catch (e) { }
+}
 
 async function route() {
   applyTheme();
@@ -305,7 +389,11 @@ async function route() {
     const cu = LS.get('c.user', null);
     if (cu) {
       USER = cu;
-      api('/user').then(u => { USER = u; LS.set('c.user', u); if (location.hash === '#/home' || location.hash === '') route(); }).catch(() => {});
+      api('/user').then(u => {
+        const changed = !cu || !u || cu.login !== u.login;
+        USER = u; LS.set('c.user', u);
+        if (changed || location.hash === '#/home' || location.hash === '') route();
+      }).catch(() => {});
     } else {
       try { USER = await api('/user'); LS.set('c.user', USER); } catch (e) { if (!TOKEN) return; }
     }
@@ -316,8 +404,9 @@ async function route() {
   if (!matched) { location.hash = '#/home'; return; }
   $$('#navbar .navbtn').forEach(b => b.classList.toggle('active', b.dataset.tab == matched.tab));
   const title = matched.title(m);
-  $('#bigTitle').textContent = title;
+  $('#bigTitle').textContent = matched.big ? matched.big(m) : title;
   $('#appbarTitle').textContent = title;
+  fitBigTitle();
   const sub = matched.sub ? matched.sub(m) : '';
   $('#bigSub').textContent = sub; $('#bigSub').style.display = sub ? '' : 'none';
   $('#backBig').hidden = !matched.detail;
@@ -355,13 +444,13 @@ function issueRow(i) {
     '<div class="lsub">' + (full ? esc(full) + ' · ' : '') + '#' + i.number + ' · ' + tAgo(i.updated_at) + ' · ' + (i.comments || 0) + ' comments' +
     (isPR ? ' · <span class="chip pr">PR</span>' : '') + '</div></div></div>';
 }
-function commitRow(c) {
-  const full = c.repository_url ? c.repository_url.replace('https://api.github.com/repos/', '') : '';
+function commitRow(c, repoFull) {
+  const full = repoFull || (c.repository_url ? c.repository_url.replace('https://api.github.com/repos/', '') : '');
   const msg = (c.commit && c.commit.message ? c.commit.message : '').split('\n')[0];
   const who = c.author ? c.author.login : (c.commit && c.commit.author ? c.commit.author.name : 'unknown');
   const av = c.author ? c.author.avatar_url : '';
   const sha = c.sha ? c.sha.slice(0, 7) : '';
-  return '<div class="lrow" data-go="' + (full ? '#/commit/' + full + '/' + c.sha : '#/repos') + '">' +
+  return '<div class="lrow" data-go="' + (full ? '#/commit/' + full + '/' + c.sha : '#/repos') + '"' + (full ? ' data-repo="' + esc(full) + '" data-sha="' + esc(c.sha) + '"' : '') + '>' +
     (av ? '<img class="cav" src="' + esc(av) + '" alt="">' : SVG.commit) +
     '<div class="lmain"><div class="ltitle">' + esc(msg) + '</div>' +
     '<div class="lsub">' + esc(who) + ' · ' + tAgo(c.commit && c.commit.author ? c.commit.author.date : '') + ' · <span class="chip">' + sha + '</span></div></div></div>';
@@ -374,7 +463,11 @@ function eventRow(ev) {
     case 'PushEvent':
       icon = SVG.commit; cls = 'push';
       text = '<b>' + esc(ev.actor.login) + '</b> pushed ' + (p.size || 1) + ' commit' + ((p.size || 1) > 1 ? 's' : '');
-      if (p.commits && p.commits[0]) body = esc((p.commits[0].message || '').split('\n')[0]);
+      if (p.commits && p.commits.length) {
+        const msgs = p.commits.map(c => (c.message || '').split('\n')[0].trim()).filter(Boolean).slice(0, 4);
+        if (msgs.length) body = msgs.map(m => esc(m)).join('<br>');
+        if ((p.size || 0) > msgs.length) body += (body ? '<br>' : '') + '+' + ((p.size || 0) - msgs.length) + ' more commit' + ((p.size || 0) - msgs.length > 1 ? 's' : '');
+      }
       break;
     case 'WatchEvent': icon = SVG.star; cls = 'star'; text = '<b>' + esc(ev.actor.login) + '</b> starred this repo'; break;
     case 'ForkEvent': icon = SVG.fork; cls = 'fork'; text = '<b>' + esc(ev.actor.login) + '</b> forked this repo' + (p.forkee ? ' → ' + esc(p.forkee.full_name) : ''); break;
@@ -396,6 +489,11 @@ function eventRow(ev) {
       break;
     case 'ReleaseEvent': icon = SVG.tag; cls = 'tag'; text = '<b>' + esc(ev.actor.login) + '</b> released ' + (p.release ? '<b>' + esc(p.release.tag_name) + '</b>' : ''); break;
     case 'DeleteEvent': icon = SVG.x; cls = 'comment'; text = '<b>' + esc(ev.actor.login) + '</b> deleted ' + (p.ref_type || '') + ' ' + esc(p.ref || ''); break;
+    case 'FollowEvent': icon = SVG.user; cls = 'user'; text = '<b>' + esc(ev.actor.login) + '</b> followed <b>@' + esc((p.target && p.target.login) || 'someone') + '</b>'; break;
+    case 'PublicEvent': icon = SVG.plus; cls = 'create'; text = '<b>' + esc(ev.actor.login) + '</b> open-sourced this repo'; break;
+    case 'GollumEvent': icon = SVG.file; cls = 'comment'; text = '<b>' + esc(ev.actor.login) + '</b> updated the wiki'; break;
+    case 'MemberEvent': icon = SVG.user; cls = 'user'; text = '<b>' + esc(ev.actor.login) + '</b> added ' + (p.member ? '<b>@' + esc(p.member.login) + '</b>' : 'a collaborator'); break;
+    case 'CommitCommentEvent': icon = SVG.comment; cls = 'comment'; text = '<b>' + esc(ev.actor.login) + '</b> commented on a commit'; if (p.comment) body = esc((p.comment.body || '').split('\n')[0]); break;
     default: text = '<b>' + esc(ev.actor.login) + '</b> · ' + esc(ev.type || '');
   }
   return '<div class="lrow"' + (repo ? ' data-go="#/repo/' + repo + '"' : '') + '>' +
@@ -404,14 +502,58 @@ function eventRow(ev) {
     (body ? '<div class="lbody">' + body + '</div>' : '') +
     '<div class="lsub">' + esc(repo) + ' · ' + tAgo(ev.created_at) + '</div></div></div>';
 }
-function fixMd(html) {
+function fixMd(html, repo) {
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script,style,iframe').forEach(x => x.remove());
-    doc.querySelectorAll('img').forEach(x => { try { x.src = new URL(x.getAttribute('src') || '', 'https://github.com/').href; } catch (e) {} });
-    doc.querySelectorAll('a').forEach(x => { try { x.href = new URL(x.getAttribute('href') || '', 'https://github.com/').href; } catch (e) {} });
+    /* GitHub's rendered HTML keeps repo-relative image paths (./assets/x.png),
+       which only resolve inside the repo - point them at the repo's raw files. */
+    const imgBase = repo ? 'https://raw.githubusercontent.com/' + repo + '/HEAD/'
+      : 'https://github.com/';
+    const aBase = repo ? 'https://github.com/' + repo + '/blob/HEAD/'
+      : 'https://github.com/';
+    doc.querySelectorAll('img').forEach(x => {
+      try { const s = x.getAttribute('src') || ''; if (s) x.src = new URL(s, imgBase).href; } catch (e) {}
+    });
+    doc.querySelectorAll('a').forEach(x => {
+      try {
+        const h = x.getAttribute('href') || '';
+        if (h && h.charAt(0) !== '#') x.href = new URL(h, aBase).href;
+      } catch (e) {}
+    });
     return doc.body.innerHTML;
   } catch (e) { return esc(html); }
+}
+/* raw.githubusercontent.com is unreachable on some networks (ISP blocks),
+   which left README images broken on those devices even though the app itself
+   works - so repo images are re-fetched through api.github.com, which every
+   Gitly feature already depends on, and swapped in as data: URIs. */
+const RAWIMG_CACHE = {};
+async function ghRawToData(o, n, path) {
+  const key = o + '/' + n + '/' + path;
+  if (RAWIMG_CACHE[key]) return RAWIMG_CACHE[key];
+  const headers = { 'Accept': 'application/vnd.github.raw', 'X-GitHub-Api-Version': '2022-11-28' };
+  if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+  const res = await fetch('https://api.github.com/repos/' + o + '/' + n + '/contents/' + path + '?ref=HEAD', { headers, cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const ct = res.headers.get('content-type') || 'application/octet-stream';
+  const buf = new Uint8Array(await res.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  const data = 'data:' + ct.split(';')[0] + ';base64,' + btoa(bin);
+  if (buf.length < 3 * 1024 * 1024) RAWIMG_CACHE[key] = data; // cache small ones only
+  return data;
+}
+/* after README/issue HTML lands in the DOM, inline every raw.githubusercontent
+   image; if the fetch fails the raw URL stays as a fallback */
+function inlineRepoImages(el) {
+  if (!el || !el.querySelectorAll) return;
+  const imgs = Array.from(el.querySelectorAll('img[src^="https://raw.githubusercontent.com/"]'));
+  imgs.forEach(img => {
+    const m = (img.getAttribute('src') || '').match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/HEAD\/(.+)$/);
+    if (!m) return;
+    ghRawToData(m[1], m[2], m[3]).then(data => { img.src = data; }).catch(() => {});
+  });
 }
 function openSheet(inner) { const s = $('#sheet'); s.innerHTML = '<div class="sheetcard">' + inner + '</div>'; s.hidden = false; }
 function closeSheet() { const s = $('#sheet'); if (s) { s.hidden = true; s.innerHTML = ''; } }
@@ -575,14 +717,14 @@ async function renderHome() {
   const seq = ++RSEQ;
   checkUpdate();
   const u = USER || await api('/user');
-  let html = '<div class="card profile"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
+  let html = '<div class="card profile" data-go="' + specialRepoGo(u.login) + '"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><button class="pavalert iss" data-go="#/issues" aria-label="Issues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
     '<div class="pname">' + esc(u.name || u.login) + '</div>' +
     '<div class="plogin" data-go="#/user/' + esc(u.login) + '">@' + esc(u.login) + '</div>' +
     (u.bio ? '<p class="pbio">' + esc(u.bio) + '</p>' : '') +
     '<div class="pstats">' +
-    '<div class="pstat"><b>' + nf(u.public_repos) + '</b><span>repos</span></div>' +
-    '<div class="pstat"><b>' + nf(u.followers) + '</b><span>followers</span></div>' +
-    '<div class="pstat"><b>' + nf(u.following) + '</b><span>following</span></div></div></div>';
+    '<div class="pstat" data-go="#/repos"><b>' + nf(u.public_repos) + '</b><span>repos</span></div>' +
+    '<div class="pstat" data-go="#/users/' + esc(u.login) + '/followers"><b>' + nf(u.followers) + '</b><span>followers</span></div>' +
+    '<div class="pstat" data-go="#/users/' + esc(u.login) + '/following"><b>' + nf(u.following) + '</b><span>following</span></div></div></div>';
   html += '<div class="card quicklinks"><button class="btn ghost" data-go="#/productivity">Productivity</button><button class="btn ghost" data-act="discover">Discover</button><button class="btn ghost" data-go="#/user/' + esc(u.login) + '">My profile</button></div>';
   html += '<h2 class="sect">Pinned repositories</h2>';
   html += pins.length ? pins.map(repoRow).join('') : '<div class="card empty">Star any repository in the Repositories tab to pin it here.<br><span class="dim">Pins sync to all your devices via your GitHub account.</span></div>';
@@ -592,6 +734,7 @@ async function renderHome() {
   html += '<h2 class="sect">Recent activity</h2><div id="feedWrap">' + (cHist.length ? feedHtml(cHist) : spinner()) + '</div>';
   if (seq !== RSEQ) return;
   view().innerHTML = html;
+  checkSpecialRepo(u.login);
   const wireAct = () => { const nb = $('#allActBtn'); if (nb) nb.addEventListener('click', () => location.hash = '#/activity'); };
   wireAct();
   try {
@@ -622,7 +765,7 @@ async function renderRepos() {
   RS = { mode: RS.mode || 'mine', q: '', page: 1, items: [] };
   if (seq !== RSEQ) return;
   view().innerHTML = '<button class="btn ghost btnblock" id="newRepoBtn" style="margin-bottom:12px">New repository</button>' +
-    '<div class="searchbar" id="searchWrap">' + SVG.search + '<input id="repoSearch" placeholder="Search repos and people…" autocomplete="off"></div>' +
+    '<div class="searchbar" id="searchWrap">' + SVG.search + '<input id="repoSearch" placeholder="' + (RS.mode === 'discover' ? 'Search all of GitHub…' : 'Search repos and people…') + '" autocomplete="off"></div>' +
     '<div class="seg" id="repoSeg">' +
     '<button class="segb' + (RS.mode === 'mine' ? ' on' : '') + '" data-mode="mine">Mine</button>' +
     '<button class="segb' + (RS.mode === 'starred' ? ' on' : '') + '" data-mode="starred">Starred</button>' +
@@ -649,11 +792,12 @@ async function loadRepos(reset) {
       list.innerHTML = cd.map(repoRow).join('');
     }
   }
-  $('#searchWrap').style.display = (RS.mode === 'discover') ? 'none' : '';
+  $('#searchWrap').style.display = '';
   let data = [], people = null;
   try {
     if (RS.mode === 'discover') {
-      const res = await api('/search/repositories?q=stars%3A%3E10000+pushed%3A%3E' + isoDaysAgo(90) + '&sort=stars&order=desc&per_page=30&page=' + RS.page);
+      const q = RS.q.length >= 2 ? encodeURIComponent(RS.q) : ('stars%3A%3E10000+pushed%3A%3E' + isoDaysAgo(90));
+      const res = await api('/search/repositories?q=' + q + '&sort=stars&order=desc&per_page=30&page=' + RS.page);
       data = res.items || [];
     } else if (RS.q.length >= 2) {
       const q = RS.q + (RS.mode === 'starred' && USER ? ' user:' + USER.login : '');
@@ -795,8 +939,59 @@ async function renderRepo(o, n) {
   try {
     const md = await api('/repos/' + full + '/readme', { accept: 'application/vnd.github.html', text: true });
     const rw = $('#readmeWrap');
-    if (rw && seq === RSEQ) rw.innerHTML = '<div class="card md">' + fixMd(md) + '</div>';
-  } catch (e) { if (seq !== RSEQ) return; const rw = $('#readmeWrap'); if (rw) rw.innerHTML = '<div class="card empty">No README found.</div>'; }
+    if (rw && seq === RSEQ) { rw.innerHTML = '<div class="card md">' + fixMd(md, full) + '</div>'; inlineRepoImages(rw); }
+  } catch (e) {
+    if (seq !== RSEQ) return;
+    const rw = $('#readmeWrap');
+    if (rw) {
+      rw.innerHTML = '<div class="card empty">No README found.<div style="margin-top:14px"><button class="btn sm ghost" id="mkReadmeBtn" style="min-width:170px">Create README</button></div></div>';
+      const mrb = $('#mkReadmeBtn');
+      if (mrb) mrb.addEventListener('click', () => addFileSheet(o, n, '', 'README.md'));
+    }
+  }
+}
+
+function wireFileActions(o, n, path) {
+  $('#addFileBtn').addEventListener('click', () => addFileSheet(o, n, path));
+  const upi = $('#upInput');
+  $('#upFileBtn').addEventListener('click', () => {
+    if (window.OneGit && window.OneGit.pickFiles) {
+      folderCtx = { o, n, dir: path || '', jid: null, kind: 'files' };
+      try { window.OneGit.pickFiles(); upProgShow('Upload files'); upProgUpdate('Choose files…', 0); return; }
+      catch (e) { folderCtx = null; }
+    }
+    upi.click();
+  });
+  const udb = $('#upDirBtn');
+  if (udb) udb.addEventListener('click', () => {
+    if (!(window.OneGit && window.OneGit.pickFolder)) { toast('Folder upload is not available'); return; }
+    folderCtx = { o, n, dir: path || '', jid: null, kind: 'folder' };
+    try { window.OneGit.pickFolder(); upProgShow('Upload folder'); upProgUpdate('Scanning folder…', 0); } catch (e) { folderCtx = null; toast('Could not open the folder picker'); }
+  });
+  upi.addEventListener('change', async () => {
+    const files = Array.from(upi.files || []);
+    if (!files.length) return;
+    const items = [];
+    for (const f of files) {
+      try { items.push({ path: f.name, b64: await fileToB64(f) }); }
+      catch (e) { toast('Could not read ' + f.name); }
+    }
+    upi.value = '';
+    if (!items.length) return;
+    const def = items.length === 1 ? 'Upload ' + items[0].path : 'Upload ' + items.length + ' files';
+    commitMsgSheet('Upload ' + items.length + ' file' + (items.length === 1 ? '' : 's'), def, async msg => {
+      upProgShow('Uploading files');
+      upProgUpdate('Reading files…', 5);
+      try {
+        await commitMany(o, n, items, path || '', msg,
+          (done, total) => upProgUpdate('Committing ' + done + ' / ' + total, done / total * 100));
+        upProgUpdate('Complete — ' + items.length + ' file' + (items.length === 1 ? '' : 's') + ' in one commit', 100);
+        setTimeout(upProgHide, 3000);
+        try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', items.length + ' file' + (items.length === 1 ? '' : 's') + ' uploaded to ' + o + '/' + n + ' in a single commit'); } catch (e) {}
+        renderFiles(o, n, path);
+      } catch (e) { upProgHide(); toast('Failed: ' + e.message); }
+    });
+  });
 }
 
 async function renderFiles(o, n, path) {
@@ -806,7 +1001,15 @@ async function renderFiles(o, n, path) {
   view().innerHTML = spinner();
   let items;
   try { items = await api('/repos/' + full + '/contents/' + (path ? encodeURIComponent(path).replace(/%2F/g, '/') : '')); }
-  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
+  catch (e) {
+    if (seq !== RSEQ) return;
+    if (/is empty/i.test(e.message || '')) {
+      view().innerHTML = '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn ghost" id="addFileBtn" style="flex:1">Add file</button><button class="btn ghost" id="upFileBtn" style="flex:1">Upload files</button><button class="btn ghost" id="upDirBtn" style="flex:1">Upload folder</button></div><input type="file" id="upInput" multiple hidden><div class="card empty">This repository is empty \u2014 add your first file to get started.</div>';
+      wireFileActions(o, n, path);
+      return;
+    }
+    view().innerHTML = errCard(e); return;
+  }
   if (!Array.isArray(items)) { view().innerHTML = '<div class="card empty">Not a folder.</div>'; return; }
   items.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1)));
   let html = path ? '<div class="card crumb">/' + esc(path) + '</div>' : '';
@@ -824,41 +1027,7 @@ async function renderFiles(o, n, path) {
   html += '</div>';
   if (seq !== RSEQ) return;
   view().innerHTML = html;
-  $('#addFileBtn').addEventListener('click', () => addFileSheet(o, n, path));
-  const upi = $('#upInput');
-  $('#upFileBtn').addEventListener('click', () => upi.click());
-  const udb = $('#upDirBtn');
-  if (udb) udb.addEventListener('click', () => {
-    if (!(window.OneGit && window.OneGit.pickFolder)) { toast('Folder upload is not available'); return; }
-    folderCtx = { o, n, dir: path || '', jid: null };
-    folderQ = []; folderEnd = false; folderOk = 0; folderFail = 0; folderSkip = 0;
-    try { window.OneGit.pickFolder(); upProgShow('Uploading folder'); upProgUpdate('Scanning folder…', 0); } catch (e) { folderCtx = null; toast('Could not open the folder picker'); }
-  });
-  upi.addEventListener('change', async () => {
-    const files = Array.from(upi.files || []);
-    if (!files.length) return;
-    upProgShow('Uploading files');
-    let done = 0;
-    for (const f of files) {
-      upProgUpdate(f.name + ' · ' + done + ' / ' + files.length, done / files.length * 100);
-      try {
-        const b64 = await fileToB64(f);
-        const p = path ? path + '/' + f.name : f.name;
-        const body = { message: 'Upload ' + f.name, content: b64 };
-        const meta = await api('/repos/' + o + '/' + n + '/contents/' + p, { status: true }).catch(() => null);
-        if (meta && meta.ok && meta.data && meta.data.sha) body.sha = meta.data.sha;
-        await api('/repos/' + o + '/' + n + '/contents/' + p, { method: 'PUT', body: JSON.stringify(body) });
-        done++;
-      } catch (e) { toast('Failed: ' + f.name + ' — ' + e.message); }
-    }
-    upProgUpdate('Complete — ' + done + ' of ' + files.length + ' uploaded', 100);
-    setTimeout(upProgHide, 3000);
-    if (done) {
-      try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', done + ' file' + (done === 1 ? '' : 's') + ' uploaded to ' + o + '/' + n); } catch (e) {}
-      renderFiles(o, n, path);
-    }
-    upi.value = '';
-  });
+  wireFileActions(o, n, path);
   let lpTimer = null, lpFired = false;
   view().querySelectorAll('[data-act="openfile"]').forEach(row => {
     row.addEventListener('pointerdown', () => {
@@ -883,12 +1052,125 @@ async function renderCommits(o, n) {
   const full = o + '/' + n;
   if (seq !== RSEQ) return;
   view().innerHTML = spinner();
-  let items;
-  try { items = await api('/repos/' + full + '/commits?per_page=30'); }
-  catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; }
-  if (!items.length) { view().innerHTML = '<div class="card empty">No commits found.</div>'; return; }
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const res = await Promise.allSettled([
+    api('/repos/' + full + '/commits?per_page=30'),
+    apiCount('/repos/' + full + '/commits'),
+    apiCount('/repos/' + full + '/commits?since=' + midnight.toISOString())
+  ]);
   if (seq !== RSEQ) return;
-  view().innerHTML = '<div class="card list">' + items.map(commitRow).join('') + '</div>';
+  if (res[0].status !== 'fulfilled') { view().innerHTML = errCard(res[0].reason); return; }
+  const items = res[0].value;
+  const total = res[1].status === 'fulfilled' ? res[1].value : null;
+  const today = res[2].status === 'fulfilled' ? res[2].value : null;
+  let html = '';
+  if (total !== null || today !== null) html += '<div class="card commitstats" style="margin:0 0 14px">' +
+    (total !== null ? '<div class="cstat total">' + nf(total) + '<span>Total commits</span></div>' : '') +
+    (today !== null ? '<div class="cstat today">' + nf(today) + '<span>Today</span></div>' : '') + '</div>';
+  html += items.length ? '<div class="card list">' + items.map(x => commitRow(x, full)).join('') + '</div>' : '<div class="card empty">No commits found.</div>';
+  view().innerHTML = html;
+  wireCommitRows();
+}
+/* counts results of a LIST endpoint exactly via the Link header (per_page=1 trick) */
+async function apiCount(path) {
+  const headers = { 'Accept': 'application/vnd.github+json' };
+  if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+  const res = await fetch('https://api.github.com' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'per_page=1', { headers, cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const link = res.headers.get('Link') || '';
+  const m = link.match(/[?&]page=(\d+)>; rel="last"/);
+  if (m) return +m[1];
+  const arr = await res.json().catch(() => null);
+  return Array.isArray(arr) ? arr.length : 0;
+}
+
+/* ---- global Commits tab: recent commits across all your repos ---- */
+function commitTabRow(x) {
+  return '<div class="lrow" data-go="#/commit/' + esc(x.repo) + '/' + x.sha + '" data-repo="' + esc(x.repo) + '" data-sha="' + esc(x.sha) + '">' +
+    (x.av ? '<img class="cav" src="' + esc(x.av) + '" alt="">' : SVG.commit) +
+    '<div class="lmain"><div class="ltitle">' + esc(x.msg) + '</div>' +
+    '<div class="lsub">' + esc(x.repo) + ' \u00b7 ' + tAgo(x.date) + ' \u00b7 <span class="chip">' + esc(String(x.sha).slice(0, 7)) + '</span></div></div></div>';
+}
+async function renderCommitsHome() {
+  const seq = ++RSEQ;
+  const cached = LS.get('c.allcomm', null);
+  const paint = items => {
+    if (seq !== RSEQ) return;
+    view().innerHTML = items.length ? '<div class="card list">' + items.map(commitTabRow).join('') + '</div>' : '<div class="card empty">No commits found yet.</div>';
+    wireCommitRows();
+  };
+  if (cached && cached.length) paint(cached); else view().innerHTML = spinner();
+  const query = 'query{viewer{repositories(first:100,orderBy:{field:PUSHED_AT,direction:DESC},affiliations:OWNER,isFork:false){nodes{nameWithOwner defaultBranchRef{target{... on Commit{history(first:10){edges{node{oid messageHeadline committedDate author{name user{login avatarUrl(size:60)}}}}}}}}}}}}';
+  try {
+    const r = await api('/graphql', { method: 'POST', body: JSON.stringify({ query }) });
+    const nodes = (r && r.data && r.data.viewer && r.data.viewer.repositories.nodes) || [];
+    const items = [];
+    nodes.forEach(nd => ((nd.defaultBranchRef && nd.defaultBranchRef.target && nd.defaultBranchRef.target.history ? nd.defaultBranchRef.target.history.edges : []) || []).forEach(e => {
+      const c = e && e.node; if (!c) return;
+      items.push({ repo: nd.nameWithOwner, sha: c.oid, msg: c.messageHeadline || '(no message)', date: c.committedDate,
+        av: c.author && c.author.user ? c.author.user.avatarUrl : '' });
+    }));
+    items.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    LS.set('c.allcomm', items.slice(0, 300));
+    paint(items.slice(0, 300));
+  } catch (e) { if (seq !== RSEQ) return; if (!cached || !cached.length) view().innerHTML = errCard(e); }
+}
+
+/* long-press support on commit rows */
+function wireCommitRows() {
+  $$('#view .lrow[data-go^="#/commit/"]').forEach(el => {
+    let t = null, fired = false;
+    const start = () => { fired = false; clearTimeout(t); t = setTimeout(() => { fired = true; try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} commitOptionsSheet(el.dataset.repo, el.dataset.sha, (el.querySelector('.ltitle') || {}).textContent || ''); }, 480); };
+    const stop = () => clearTimeout(t);
+    el.addEventListener('touchstart', start, { passive: true });
+    el.addEventListener('touchmove', stop, { passive: true });
+    el.addEventListener('touchend', e => { stop(); if (fired) e.preventDefault(); }, false);
+    el.addEventListener('touchcancel', stop);
+    el.addEventListener('contextmenu', e => { if (fired) e.preventDefault(); });
+    el.addEventListener('click', e => { if (fired) { e.stopImmediatePropagation(); e.preventDefault(); setTimeout(() => fired = false, 500); } }, true);
+  });
+}
+
+/* long-press sheet: view / revert / rollback any commit */
+async function commitOptionsSheet(full, sha, title) {
+  if (!full || !sha) return;
+  const parts = full.split('/');
+  const o = parts[0], n = parts.slice(1).join('/');
+  openSheet('<div class="sheethead"><b>' + esc(title || String(sha).slice(0, 7)) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<p class="dim" style="margin:0 4px 4px">' + esc(full) + ' \u00b7 <span class="chip">' + esc(String(sha).slice(0, 7)) + '</span></p>' +
+    '<button class="btn primary btnblock" id="coView">View commit</button>' +
+    '<button class="btn ghost btnblock" id="coRevert" style="margin-top:8px">Revert changes</button>' +
+    '<button class="btn danger btnblock" id="coRollback" style="margin-top:8px">Rollback \u2014 remove commits</button>');
+  $('#coView').addEventListener('click', () => { closeSheet(); location.hash = '#/commit/' + full + '/' + sha; });
+  $('#coRevert').addEventListener('click', async () => {
+    const b = $('#coRevert');
+    b.textContent = 'Loading\u2026';
+    try {
+      const c = await api('/repos/' + full + '/commits/' + sha);
+      if (!c.files || !c.files.length) throw new Error('no file changes to revert');
+      if (!c.parents || !c.parents.length) throw new Error('the first commit cannot be reverted');
+      b.textContent = 'Reverting\u2026';
+      await doRevertCommit(o, n, c);
+      closeSheet();
+      toast('Reverted \u2014 a new commit undoes these changes');
+      try { route(); } catch (e) {}
+    } catch (e) { b.textContent = 'Revert changes'; toast('Failed: ' + e.message); }
+  });
+  $('#coRollback').addEventListener('click', async () => {
+    const b = $('#coRollback');
+    b.textContent = 'Checking\u2026';
+    try {
+      const c = await api('/repos/' + full + '/commits/' + sha);
+      if (!c.parents || !c.parents.length) throw new Error('nothing before this commit to roll back to');
+      const repo = await api('/repos/' + full);
+      const branch = repo.default_branch || 'main';
+      const list = await api('/repos/' + full + '/commits?per_page=100');
+      const idx = list.findIndex(x => x.sha === sha);
+      if (idx < 0) throw new Error('this commit is not on ' + branch);
+      b.textContent = 'Rollback';
+      rollbackSheet(o, n, c, branch, idx + 1);
+    } catch (e) { b.textContent = 'Rollback \u2014 remove commits'; toast('Failed: ' + e.message); }
+  });
 }
 
 async function renderCommit(o, n, sha) {
@@ -915,11 +1197,17 @@ async function renderCommit(o, n, sha) {
       '<div class="cstat del">-' + nf(c.stats.deletions) + '<span>deletions</span></div>' +
       '<div class="cstat total">' + nf(c.stats.total) + '<span>changes</span></div></div>';
   }
+  if ((c.files && c.files.length) || (c.parents && c.parents.length && c.parents[0].sha)) {
+    html += '<div class="actionrow" style="margin-top:12px">';
+    if (c.files && c.files.length) html += '<button class="btn" id="cRevert">Revert changes</button>';
+    if (c.parents && c.parents.length && c.parents[0].sha) html += '<button class="btn danger" id="cRollback">Rollback</button>';
+    html += '</div>';
+  }
   html += '</div>';
   html += '<h2 class="sect">Changed files (' + (c.files ? c.files.length : 0) + ')</h2>';
   if (!c.files || !c.files.length) html += '<div class="card empty">No file changes listed.</div>';
   else c.files.slice(0, 40).forEach(f => {
-    html += '<div class="card"><div class="filehead">' + SVG.file +
+    html += '<div class="card"><div class="filehead" data-go="#/commitfile/' + full + '/' + c.sha + '/' + encodeURIComponent(f.filename) + '">' + SVG.file +
       '<b style="font-size:13px;word-break:break-all">' + esc(f.filename) + '</b>' +
       (f.status === 'added' ? '<span class="chip add">added</span>' : f.status === 'removed' ? '<span class="chip del">removed</span>' : f.status === 'renamed' ? '<span class="chip">renamed</span>' : '<span class="chip">modified</span>') + '</div>';
     if (f.patch) {
@@ -934,6 +1222,146 @@ async function renderCommit(o, n, sha) {
   });
   if (seq !== RSEQ) return;
   view().innerHTML = html;
+  const rv = $('#cRevert');
+  if (rv) rv.addEventListener('click', async () => {
+    rv.textContent = 'Reverting\u2026';
+    try {
+      await doRevertCommit(o, n, c);
+      toast('Reverted \u2014 a new commit undoes these changes');
+      location.hash = '#/repo/' + full + '/commits';
+    } catch (e) { rv.textContent = 'Revert changes'; toast('Failed: ' + e.message); }
+  });
+  const rb = $('#cRollback');
+  if (rb) rb.addEventListener('click', async () => {
+    rb.textContent = 'Checking\u2026';
+    let cnt = -1, branch = '';
+    try {
+      const repo = await api('/repos/' + full);
+      branch = repo.default_branch || 'main';
+      const list = await api('/repos/' + full + '/commits?per_page=100');
+      const idx = list.findIndex(x => x.sha === c.sha);
+      cnt = idx < 0 ? -2 : idx + 1;
+    } catch (e) {}
+    rb.textContent = 'Rollback';
+    if (cnt === -2) { toast('This commit is not on ' + (branch || 'the default branch') + ' \u2014 rollback is not available'); return; }
+    if (cnt < 1) { toast('Could not check the branch \u2014 try again'); return; }
+    rollbackSheet(o, n, c, branch, cnt);
+  });
+}
+
+/* revert = new commit that restores the parent state for every path this commit touched */
+async function doRevertCommit(o, n, c) {
+  const repo = await api('/repos/' + o + '/' + n);
+  const branch = repo.default_branch || 'main';
+  const head = await api('/repos/' + o + '/' + n + '/git/ref/heads/' + branch);
+  const headCommit = await api('/repos/' + o + '/' + n + '/git/commits/' + head.object.sha);
+  const pCommit = await api('/repos/' + o + '/' + n + '/git/commits/' + c.parents[0].sha);
+  const pTree = await api('/repos/' + o + '/' + n + '/git/trees/' + pCommit.tree.sha + '?recursive=1');
+  const byPath = {};
+  (pTree.tree || []).forEach(t => { if (t.type === 'blob') byPath[t.path] = t; });
+  const tree = [];
+  (c.files || []).slice(0, 300).forEach(f => {
+    if (f.status === 'renamed') {
+      const old = byPath[f.previous_filename];
+      tree.push({ path: f.previous_filename, mode: old ? old.mode : '100644', type: 'blob', sha: old ? old.sha : null });
+      tree.push({ path: f.filename, mode: '100644', type: 'blob', sha: null });
+    } else {
+      const e = byPath[f.filename];
+      tree.push({ path: f.filename, mode: e ? e.mode : '100644', type: 'blob', sha: e ? e.sha : null });
+    }
+  });
+  if (!tree.length) throw new Error('Nothing to revert');
+  const newTree = await api('/repos/' + o + '/' + n + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: headCommit.tree.sha, tree }) });
+  const msg = 'Revert "' + (c.commit && c.commit.message ? c.commit.message : '').split('\n')[0] + '"\n\nThis reverts commit ' + c.sha + '.';
+  const nc = await api('/repos/' + o + '/' + n + '/git/commits', { method: 'POST', body: JSON.stringify({ message: msg, tree: newTree.sha, parents: [head.object.sha] }) });
+  await api('/repos/' + o + '/' + n + '/git/refs/heads/' + branch, { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) });
+}
+
+/* rollback = force-move the branch ref to this commit's parent, dropping it and everything after */
+function rollbackSheet(o, n, c, branch, cnt) {
+  openSheet('<div class="sheethead"><b>Rollback ' + esc(branch) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
+    '<p class="dim" style="margin:4px 0 14px">This permanently removes <b>' + cnt + ' commit' + (cnt === 1 ? '' : 's') + '</b> \u2014 the one you are viewing and every commit made after it \u2014 from ' + esc(branch) + '. The changes will be gone. Anyone who already pulled a copy may still have them.</p>' +
+    '<button class="btn danger btnblock" id="rbGo">Remove ' + cnt + ' commit' + (cnt === 1 ? '' : 's') + '</button>');
+  $('#rbGo').addEventListener('click', async () => {
+    const b = $('#rbGo');
+    b.textContent = 'Removing\u2026';
+    try {
+      await api('/repos/' + o + '/' + n + '/git/refs/heads/' + branch, { method: 'PATCH', body: JSON.stringify({ sha: c.parents[0].sha, force: true }) });
+      location.hash = '#/repo/' + o + '/' + n + '/commits';
+      toast('Rolled back \u2014 ' + cnt + ' commit' + (cnt === 1 ? '' : 's') + ' removed');
+    } catch (e) { b.textContent = 'Remove ' + cnt + ' commit' + (cnt === 1 ? '' : 's'); toast('Failed: ' + e.message); }
+  });
+}
+
+/* asks for a custom commit message before an upload commits */
+function commitMsgSheet(title, prefill, onGo, onCancel) {
+  openSheet('<div class="sheethead"><b>' + esc(title) + '</b><button class="iconbtn" id="cmX" aria-label="close">' + SVG.x + '</button></div>' +
+    '<label class="fldlabel">Commit message</label>' +
+    '<input class="fld" id="cmMsg" value="' + esc(prefill) + '" maxlength="200" autocomplete="off" spellcheck="false">' +
+    '<button class="btn primary btnblock" id="cmGo" style="margin-top:16px">Commit</button>');
+  const inp = $('#cmMsg');
+  try { inp.focus(); } catch (e) {}
+  $('#cmX').addEventListener('click', () => { closeSheet(); if (onCancel) onCancel(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') $('#cmGo').click(); });
+  $('#cmGo').addEventListener('click', () => { const m = inp.value.trim() || prefill; closeSheet(); onGo(m); });
+}
+
+/* full file content at a commit, plus its diff \u2014 GitHub-style "view file" */
+async function renderCommitFile(o, n, sha, path) {
+  const seq = ++RSEQ;
+  const full = o + '/' + n;
+  view().innerHTML = spinner();
+  const res = await Promise.allSettled([
+    api('/repos/' + full + '/commits/' + sha),
+    api('/repos/' + full + '/contents/' + path + '?ref=' + sha)
+  ]);
+  if (seq !== RSEQ) return;
+  const c = res[0].status === 'fulfilled' ? res[0].value : null;
+  const meta = res[1].status === 'fulfilled' ? res[1].value : null;
+  if (!c && !meta) { view().innerHTML = errCard(res[0].reason || res[1].reason); return; }
+  const f = c ? (c.files || []).find(x => x.filename === path) : null;
+  const cmsg = c && c.commit && c.commit.message ? c.commit.message.split('\n')[0] : '';
+  let raw = '';
+  if (meta && typeof meta.content === 'string' && meta.encoding === 'base64') {
+    const b64 = meta.content.replace(/\n/g, '');
+    try { raw = decodeURIComponent(escape(atob(b64))); } catch (e2) { raw = atob(b64); }
+  }
+  const headSha = (c && c.sha) || sha;
+  let html = '<div class="card"><div class="filehead">' + SVG.file +
+    '<b style="font-size:13px;word-break:break-all">' + esc(path) + '</b></div>' +
+    '<div class="ihmeta">at commit ' + headSha.slice(0, 7) + (cmsg ? ' \u00b7 ' + esc(cmsg) : '') +
+    (f ? ' \u00b7 <span class="chip add">+' + nf(f.additions || 0) + '</span> <span class="chip del">-' + nf(f.deletions || 0) + '</span>' : '') + '</div>' +
+    '<div class="seg" style="margin-top:12px"><button class="segb on" id="cfTabFile">File</button><button class="segb" id="cfTabDiff">Changes</button></div></div>';
+  let fileBlock;
+  if (raw) {
+    const MAX = 60000;
+    let shown = raw, cut = false;
+    if (raw.length > MAX) { shown = raw.slice(0, MAX); cut = true; }
+    const ls = shown.split('\n');
+    if (ls.length > 2000) { shown = ls.slice(0, 2000).join('\n'); cut = true; }
+    fileBlock = '<div class="card"><pre class="filepre">' + esc(shown || '(empty file)') + (cut ? '\n\n\u2026 \u2014 truncated for display' : '') + '</pre></div>';
+  } else {
+    fileBlock = '<div class="card empty">' + (f && f.status === 'removed' ? 'This file was deleted in this commit \u2014 no content exists at this commit.' : 'This file cannot be previewed here (binary or too large).') +
+      (meta && meta.download_url ? '<br><button class="btn ghost" style="margin-top:12px" data-act="download" data-url="' + esc(meta.download_url) + '" data-name="' + esc(path.split('/').pop()) + '">Download</button>' : '') + '</div>';
+  }
+  let diffBlock;
+  if (f && f.patch) {
+    const ls = f.patch.split('\n').slice(0, 3000);
+    diffBlock = '<div class="card"><div class="patchpre">' + ls.map(l => {
+      let cls = '';
+      if (l.startsWith('+')) cls = 'add'; else if (l.startsWith('-')) cls = 'del'; else if (l.startsWith('@@')) cls = 'hh';
+      return '<div class="pline ' + cls + '">' + esc(l || ' ') + '</div>';
+    }).join('') + '</div></div>';
+  } else if (f && f.status === 'added') diffBlock = '<div class="card empty">This file was added in this commit \u2014 see the File tab for its full content.</div>';
+  else if (f && f.status === 'removed') diffBlock = '<div class="card empty">This file was deleted in this commit \u2014 there is nothing to show.</div>';
+  else diffBlock = '<div class="card empty">No inline diff available for this file.</div>';
+  html += '<div id="cfFile">' + fileBlock + '</div><div id="cfDiff" style="display:none">' + diffBlock + '</div>';
+  view().innerHTML = html;
+  const tF = $('#cfTabFile'), tD = $('#cfTabDiff');
+  if (tF && tD) {
+    tF.addEventListener('click', () => { tF.classList.add('on'); tD.classList.remove('on'); $('#cfFile').style.display = ''; $('#cfDiff').style.display = 'none'; });
+    tD.addEventListener('click', () => { tD.classList.add('on'); tF.classList.remove('on'); $('#cfFile').style.display = 'none'; $('#cfDiff').style.display = ''; });
+  }
 }
 
 async function renderReleases(o, n) {
@@ -972,7 +1400,7 @@ async function renderReleases(o, n) {
       '<div class="lrow" data-act="download" data-url="https://github.com/' + full + '/archive/refs/tags/' + esc(rl.tag_name) + '.tar.gz" data-name="' + esc(n + '-' + rl.tag_name + '.tar.gz') + '">' + SVG.dl +
       '<div class="lmain"><div class="ltitle">Source code (tar.gz)</div><div class="lsub">complete snapshot of ' + esc(rl.tag_name) + '</div></div></div>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn sm ghost" data-act="relup" data-relup="' + rl.id + '" style="flex:1">Upload files</button>' +
+      '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn sm ghost" data-act="relup" data-relup="' + rl.id + '" data-full="' + esc(full) + '" style="flex:1">Upload files</button>' +
       '<button class="btn sm ghost" data-rel="' + rl.id + '" style="flex:1">Edit release</button></div></div>';
   });
   if (seq !== RSEQ) return;
@@ -1108,7 +1536,7 @@ function newGistSheet() {
   });
 }
 
-function addFileSheet(o, n, path) {
+function addFileSheet(o, n, path, prefill) {
   openSheet('<div class="sheethead"><b>Add file — ' + esc(n + '/' + (path || '')) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
     '<label class="fldlabel">Filename</label>' +
     '<input class="fld" id="afName" placeholder="hello.js" autocomplete="off">' +
@@ -1117,6 +1545,7 @@ function addFileSheet(o, n, path) {
     '<label class="fldlabel" style="margin-top:12px">Commit message</label>' +
     '<input class="fld" id="afMsg" placeholder="Create file" autocomplete="off">' +
     '<button class="btn primary btnblock" id="afSubmit" style="margin-top:18px">Commit file</button>');
+  if (prefill) $('#afName').value = prefill;
   $('#afSubmit').addEventListener('click', async () => {
     const fname = $('#afName').value.trim();
     if (!fname) { toast('Give the file a name'); return; }
@@ -1273,7 +1702,24 @@ function editReleaseSheet(o, n, rl) {
       closeSheet(); toast('Release published'); renderReleases(o, n);
     } catch (e) { toast('Failed: ' + e.message); pb.disabled = false; }
   });
-  $('#xrlFiles').addEventListener('click', () => $('#xrlInput').click());
+  $('#xrlFiles').addEventListener('click', () => {
+    if (window.OneGit && window.OneGit.pickAssets) {
+      try {
+        window._assetAfter = async () => {
+          try {
+            const rels = await api('/repos/' + full + '/releases');
+            const fresh = (rels || []).find(x => x.id === rl.id);
+            if (fresh) { rl.assets = fresh.assets || []; drawXAssets(); }
+          } catch (er) {}
+          renderReleases(o, n);
+        };
+        toast('Choose files to attach');
+        window.OneGit.pickAssets(full, String(rl.id));
+        return;
+      } catch (e) {}
+    }
+    $('#xrlInput').click();
+  });
   $('#xrlInput').addEventListener('change', async e => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -1333,12 +1779,14 @@ function deleteAssetSheet(full, aid, name) {
 function deleteFileSheet(full, path, sha) {
   const name = path.split('/').pop();
   openSheet('<div class="sheethead"><b>Delete — ' + esc(name) + '</b><button class="iconbtn" data-act="closesheet">' + SVG.x + '</button></div>' +
-    '<p class="dim" style="margin:4px 0 14px">Delete this file from the repository? This creates a commit — it can be reverted on GitHub but not undone from here.</p>' +
+    '<label class="fldlabel">Commit message</label>' +
+    '<input class="fld" id="dfMsg" value="Delete ' + esc(name) + '" autocomplete="off">' +
+    '<p class="dim" style="margin:12px 4px 14px">Delete this file from the repository? This creates a commit — it can be reverted on GitHub but not undone from here.</p>' +
     '<button class="btn danger btnblock" id="dfConfirm">Delete file</button>');
   $('#dfConfirm').addEventListener('click', async () => {
     $('#dfConfirm').disabled = true;
     try {
-      await api('/repos/' + full + '/contents/' + path, { method: 'DELETE', body: JSON.stringify({ message: 'Delete ' + name, sha }) });
+      await api('/repos/' + full + '/contents/' + path, { method: 'DELETE', body: JSON.stringify({ message: $('#dfMsg').value.trim() || ('Delete ' + name), sha }) });
       closeSheet(); toast('Deleted ' + name);
       const parts = full.split('/'), dir = path.split('/').slice(0, -1).join('/');
       renderFiles(parts[0], parts[1], dir);
@@ -1438,52 +1886,81 @@ function upProgUpdate(sub, pct) {
   if (b) b.style.width = Math.max(0, Math.min(100, Math.round(pct))) + '%';
 }
 function upProgHide() { const el = document.getElementById('upProgCard'); if (el) el.remove(); }
-let folderCtx = null, folderQ = [], folderBusy = false, folderEnd = false, folderOk = 0, folderFail = 0, folderSkip = 0;
-window.__folderFile = (jid, path, mime, b64) => {
+let folderCtx = null;
+/* native scan result: folder walked or files picked — offer the commit sheet.
+ * count < 0 means the picker was cancelled; tooBig counts files over
+ * GitHub's 100 MB per-file limit; truncated means the 2000-file cap was hit. */
+window.__folderScanned = (jid, count, bytes, tooBig, truncated) => {
   if (!folderCtx) return;
   if (folderCtx.jid === null) folderCtx.jid = jid;
   if (jid !== folderCtx.jid) return;
-  if (!b64) { folderSkip++; toast('Skipped ' + path + ' — file too large'); return; }
-  folderQ.push({ path, b64 });
-  pumpFolder();
+  if (count < 0) { folderCtx = null; upProgHide(); toast('Upload cancelled'); return; }
+  if (count === 0) { folderCtx = null; upProgHide(); toast(tooBig > 0 ? 'Every file in there is over 100 MB — GitHub refuses files that big' : 'No files found to upload'); return; }
+  if (truncated) toast('More than 2000 files — uploading the first 2000');
+  if (tooBig > 0) toast(tooBig + ' file' + (tooBig > 1 ? 's' : '') + ' over 100 MB skipped — GitHub refuses files that big');
+  const ctx = folderCtx;
+  upProgUpdate(count + ' files — ' + fmtSize(bytes) + ' ready', 100);
+  commitMsgSheet('Upload ' + (ctx.kind === 'folder' ? 'folder' : 'files'), 'Upload ' + count + ' file' + (count === 1 ? '' : 's'), async msg => {
+    if (!window.OneGit || !window.OneGit.uploadFolder) { folderCtx = null; upProgHide(); toast('Upload not available'); return; }
+    upProgUpdate('Uploading 0 / ' + count, 2);
+    try { window.OneGit.uploadFolder(jid, ctx.o, ctx.n, ctx.dir || '', msg); }
+    catch (e) { folderCtx = null; upProgHide(); toast('Failed: ' + e.message); }
+  }, () => { folderCtx = null; upProgHide(); toast('Upload cancelled'); });
 };
-window.__folderDone = (jid) => {
-  if (!folderCtx) return;
-  if (folderCtx.jid === null) folderCtx.jid = jid;
-  if (jid !== folderCtx.jid) return;
-  folderEnd = true;
-  pumpFolder();
+window.__folderProgress = (jid, done, total) => {
+  if (!folderCtx || folderCtx.jid !== jid) return;
+  upProgUpdate('Uploading ' + done + ' / ' + total + (total === 1 ? ' file' : ' files'), total ? done / total * 100 : 100);
 };
-async function pumpFolder() {
-  if (folderBusy) return;
-  folderBusy = true;
-  while (folderQ.length) {
-    const f = folderQ.shift();
-    const done = folderOk + folderFail + folderSkip;
-    const total = folderEnd ? done + folderQ.length + 1 : 0;
-    upProgUpdate(total ? (done + 1) + ' / ' + total + ' · ' + f.path : (done ? done + ' done · ' : '') + f.path, total ? done / total * 100 : 0);
-    try {
-      const p = folderCtx.dir ? folderCtx.dir + '/' + f.path : f.path;
-      const body = { message: 'Upload ' + f.path, content: f.b64 };
-      const meta = await api('/repos/' + folderCtx.o + '/' + folderCtx.n + '/contents/' + p, { status: true }).catch(() => null);
-      if (meta && meta.ok && meta.data && meta.data.sha) body.sha = meta.data.sha;
-      await api('/repos/' + folderCtx.o + '/' + folderCtx.n + '/contents/' + p, { method: 'PUT', body: JSON.stringify(body) });
-      folderOk++;
-    } catch (e) { folderFail++; toast('Failed: ' + f.path + ' — ' + e.message); }
+window.__folderStage = (jid, text) => {
+  if (!folderCtx || folderCtx.jid !== jid) return;
+  upProgUpdate(text, 100);
+};
+window.__folderResult = (jid, ok, fail, errs) => {
+  if (!folderCtx || folderCtx.jid !== jid) return;
+  const ctx = folderCtx; folderCtx = null;
+  upProgHide();
+  let m = '';
+  try { const a = typeof errs === 'string' ? JSON.parse(errs) : errs; if (a && a.length) m = a.slice(0, 3).join(' · '); } catch (e) {}
+  if (fail > 0) toast(ok + ' uploaded, ' + fail + ' failed' + (m ? ' — ' + m : ''));
+  else toast('Uploaded ' + ok + ' file' + (ok === 1 ? '' : 's') + ' in one commit');
+  try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', ok + ' of ' + (ok + fail) + ' files uploaded to ' + ctx.o + '/' + ctx.n); } catch (e) {}
+  renderFiles(ctx.o, ctx.n, ctx.dir);
+};
+/* native release-asset upload finished (window._assetAfter re-renders the view) */
+window.__assetDone = (ok, fail, msg) => {
+  toast(fail > 0 ? (ok + ' uploaded, ' + fail + ' failed' + (msg ? ' — ' + msg : '')) : 'Uploaded ' + ok + ' file' + (ok === 1 ? '' : 's'));
+  const after = window._assetAfter; window._assetAfter = null;
+  if (after) { try { after(); } catch (e) {} }
+};
+/* commits many files as ONE commit via the Git Data API (blobs -> tree -> commit) */
+async function commitMany(o, n, files, dir, message, onProg) {
+  const repo = await api('/repos/' + o + '/' + n);
+  const branch = repo.default_branch || 'main';
+  let ref;
+  try { ref = await api('/repos/' + o + '/' + n + '/git/ref/heads/' + branch); }
+  catch (e) {
+    // repository has no commits yet: create files via the contents API
+    for (let i = 0; i < files.length; i++) {
+      await api('/repos/' + o + '/' + n + '/contents/' + encodeURIComponent((dir ? dir + '/' : '') + files[i].path).replace(/%2F/g, '/'),
+        { method: 'PUT', body: JSON.stringify({ message: message + (files.length > 1 ? ' \u2014 ' + files[i].path : ''), content: files[i].b64, branch }) });
+      if (onProg) onProg(i + 1, files.length);
+    }
+    return files.length;
   }
-  if (folderEnd) {
-    const ctx = folderCtx;
-    folderCtx = null;
-    const summary = folderOk + ' file' + (folderOk === 1 ? '' : 's') + ' uploaded' + (folderFail ? ' · ' + folderFail + ' failed' : '');
-    if (folderOk) {
-      upProgUpdate('Complete — ' + summary, 100);
-      setTimeout(upProgHide, 3000);
-      try { if (window.OneGit && window.OneGit.notify) window.OneGit.notify('Upload complete', summary + ' to ' + ctx.o + '/' + ctx.n); } catch (e) {}
-      renderFiles(ctx.o, ctx.n, ctx.dir);
-    } else upProgHide();
-    folderQ = []; folderEnd = false; folderOk = 0; folderFail = 0; folderSkip = 0;
+  const parentSha = ref.object.sha;
+  const headCommit = await api('/repos/' + o + '/' + n + '/git/commits/' + parentSha);
+  const baseTree = headCommit.tree.sha;
+  const tree = [];
+  for (let i = 0; i < files.length; i += 6) {
+    const chunk = files.slice(i, i + 6);
+    const blobs = await Promise.all(chunk.map(f => api('/repos/' + o + '/' + n + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: f.b64, encoding: 'base64' }) })));
+    blobs.forEach((b, k) => tree.push({ path: (dir ? dir + '/' : '') + chunk[k].path, mode: '100644', type: 'blob', sha: b.sha }));
+    if (onProg) onProg(Math.min(i + 6, files.length), files.length);
   }
-  folderBusy = false;
+  const newTree = await api('/repos/' + o + '/' + n + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: baseTree, tree }) });
+  const newCommit = await api('/repos/' + o + '/' + n + '/git/commits', { method: 'POST', body: JSON.stringify({ message, tree: newTree.sha, parents: [parentSha] }) });
+  await api('/repos/' + o + '/' + n + '/git/refs/heads/' + branch, { method: 'PATCH', body: JSON.stringify({ sha: newCommit.sha }) });
+  return files.length;
 }
 
 function deleteRepoSheet(o, n) {
@@ -1525,15 +2002,16 @@ async function renderIssue(o, n, num) {
     (isPR && iss.pull_request.merged_at ? ' · merged' : '') + '</div>' +
     '<button class="btn ' + (iss.state === 'open' ? 'ghost' : 'primary') + '" id="stateBtn" style="margin-top:14px">' +
     (iss.state === 'open' ? (isPR ? 'Close pull request' : 'Close issue') : (isPR ? 'Reopen pull request' : 'Reopen issue')) + '</button></div>';
-  html += '<div class="card md">' + (iss.body_html ? fixMd(iss.body_html) : '<p class="dim">No description.</p>') + '</div>';
+  html += '<div class="card md">' + (iss.body_html ? fixMd(iss.body_html, o + '/' + n) : '<p class="dim">No description.</p>') + '</div>';
   html += '<h2 class="sect">Comments (' + comments.length + ')</h2>';
   comments.forEach(c => {
     html += '<div class="card comment"><div class="crow"><img class="cav" src="' + esc(c.user.avatar_url) + '" alt=""><b data-go="#/user/' + esc(c.user.login) + '">' + esc(c.user.login) + '</b><span class="dim">' + tAgo(c.created_at) + '</span></div>' +
-      '<div class="md">' + (c.body_html ? fixMd(c.body_html) : '') + '</div></div>';
+      '<div class="md">' + (c.body_html ? fixMd(c.body_html, o + '/' + n) : '') + '</div></div>';
   });
   html += '<div class="card reply"><textarea id="replyText" placeholder="Write a comment…"></textarea><button class="btn primary" id="replyBtn">Comment</button></div>';
   if (seq !== RSEQ) return;
   view().innerHTML = html;
+  inlineRepoImages(view());
   const sb = $('#stateBtn');
   if (sb) sb.addEventListener('click', async () => {
     sb.disabled = true;
@@ -1624,12 +2102,39 @@ async function renderNotifs() {
 }
 
 /* ================= views: user profile ================= */
+/* profile README only - what the profile card opens */
+async function renderProfileReadme(login) {
+  const seq = ++RSEQ;
+  view().innerHTML = spinner();
+  const res = await Promise.allSettled([
+    api('/repos/' + login + '/' + login + '/readme', { accept: 'application/vnd.github.html', text: true }),
+    api('/users/' + login)
+  ]);
+  if (seq !== RSEQ) return;
+  if (res[0].status !== 'fulfilled') {
+    view().innerHTML = '<div class="card empty">@' + esc(login) + ' has no profile README yet.<br><span class="dim">A profile README appears when there is a public repository named exactly like the username, with a README.md inside it. You can create one from the Repos tab — New repository.</span></div>';
+    return;
+  }
+  const md = res[0].value;
+  const u = res[1].status === 'fulfilled' ? res[1].value : null;
+  let html = '';
+  if (u) {
+    html += '<div class="card profile" data-go="#/user/' + esc(login) + '"><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
+      '<div class="pname">' + esc(u.name || u.login) + '</div>' +
+      '<div class="plogin">@' + esc(u.login) + '</div>' +
+      (u.bio ? '<p class="pbio">' + esc(u.bio) + '</p>' : '') + '</div>';
+  }
+  html += '<div class="card md">' + fixMd(md, login + '/' + login) + '</div>';
+  view().innerHTML = html;
+  inlineRepoImages(view());
+}
+
 async function renderUser(login) {
   const seq = ++RSEQ;
   if (seq !== RSEQ) return;
   view().innerHTML = spinner();
   let u = cached('/users/' + login) || null, repos = cached('/users/' + login + '/repos?per_page=100&sort=pushed') || null, followState = null;
-  const self = USER && USER.login.toLowerCase() === login.toLowerCase();
+  const self = (USER && USER.login) ? USER.login.toLowerCase() === login.toLowerCase() : true;
   if (u) api('/users/' + login).catch(() => {});
   if (!u) { try { u = await api('/users/' + login); } catch (e) { if (seq !== RSEQ) return; view().innerHTML = errCard(e); return; } }
   if (!self) { const f = await api('/user/following/' + login, { status: true }).catch(() => null); followState = f ? f.status === 204 : null; }
@@ -1637,7 +2142,7 @@ async function renderUser(login) {
   else { try { repos = await api('/users/' + login + '/repos?per_page=100&sort=pushed'); } catch (e) { repos = []; } }
   repos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
   const top = repos.slice(0, 8);
-  let html = '<div class="card profile"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
+  let html = '<div class="card profile" data-go="' + specialRepoGo(login) + '"><button class="pavalert" data-go="#/notifs" aria-label="Alerts">' + SVG.bell + '</button><img class="pav" src="' + esc(u.avatar_url) + '" alt="">' +
     '<div class="pname">' + esc(u.name || u.login) + '</div>' +
     '<div class="plogin">@' + esc(u.login) + (u.type === 'Organization' ? ' · organization' : '') + '</div>' +
     (u.bio ? '<p class="pbio">' + esc(u.bio) + '</p>' : '') +
@@ -1653,12 +2158,23 @@ async function renderUser(login) {
   }
   html += '<div class="linkrow"><button class="btn sm ghost" data-act="ext" data-url="' + esc(u.html_url) + '">Open on GitHub</button></div>';
   html += '</div>';
+  html += '<div id="preReadme"></div>';
   html += '<h2 class="sect">Popular repositories</h2>';
   html += top.length ? top.map(repoRow).join('') : '<div class="card empty">No public repositories.</div>';
   if (seq !== RSEQ) return;
   view().innerHTML = html;
+  checkSpecialRepo(login);
+  (async () => {
+    try {
+      const md = await api('/repos/' + login + '/' + login + '/readme', { accept: 'application/vnd.github.html', text: true });
+      const el = $('#preReadme');
+      if (el && seq === RSEQ) { el.innerHTML = '<h2 class="sect">Profile README</h2><div class="card md">' + fixMd(md, login + '/' + login) + '</div>'; inlineRepoImages(el); }
+    } catch (e) { /* no special repo - nothing to show */ }
+  })();
   const fb = $('#followBtn');
-  if (fb) fb.addEventListener('click', async () => {
+  if (fb) fb.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (USER && USER.login && USER.login.toLowerCase() === login.toLowerCase()) { toast('You cannot follow yourself'); return; }
     fb.disabled = true;
     const following = fb.classList.contains('on');
     try {
@@ -1667,11 +2183,19 @@ async function renderUser(login) {
       fb.classList.remove('primary');
       fb.textContent = following ? 'Follow' : 'Following';
       toast(following ? 'Unfollowed ' + login : 'Following ' + login);
-    } catch (e) { toast('Failed: ' + e.message); }
-    fb.disabled = false;
+    } catch (e) {
+      if (/not found/i.test(e.message || '')) {
+        toast('Could not follow ' + login + ' \u2014 this is usually your own profile');
+        try {
+          const me = await api('/user');
+          if (me && me.login) { USER = me; LS.set('c.user', me); route(); return; }
+        } catch (e2) {}
+      } else toast('Failed: ' + e.message);
+      fb.disabled = false;
+    }
   });
   const eb = $('#editProfBtn');
-  if (eb) eb.addEventListener('click', editProfileSheet);
+  if (eb) eb.addEventListener('click', e => { e.stopPropagation(); editProfileSheet(); });
 }
 
 /* ================= views: user lists (followers / following) ================= */
@@ -1750,7 +2274,7 @@ function renderSettings() {
   const wireTabs = () => $$('[data-st]').forEach(b => b.addEventListener('click', () => { STAB = b.dataset.st; renderSettings(); }));
   if (STAB === 'credits') {
     html += '<div class="card" style="text-align:center;padding:28px 20px">' +
-      '<div style="font-size:34px;font-weight:800;letter-spacing:-0.5px">OneGit</div>' +
+      '<div style="font-size:34px;font-weight:800;letter-spacing:-0.5px">Gitly</div>' +
       '<ul class="creditslist" style="list-style:none;text-align:left;margin:16px auto 0;padding:0;max-width:290px">' +
       '<li class="lsub" style="padding:7px 0 7px 18px;position:relative;border-bottom:1px solid var(--divider)">Version ' + APPV + '</li>' +
       '<li class="lsub" style="padding:7px 0 7px 18px;position:relative;border-bottom:1px solid var(--divider)">Syncs via your GitHub account</li>' +
@@ -1793,7 +2317,7 @@ function renderSettings() {
   html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Navigation glow</div><div class="lsub">Adds an accent-colored glow around the bottom navigation bar and its active tab. Off by default for a cleaner look.</div></div>' +
     '<button class="switch' + (LS.get('navglow', false) ? ' on' : '') + '" id="navglowSw" aria-label="navigation glow"></button></div></div>';
   html += '<h2 class="sect">App updates</h2>';
-  html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Auto-download app updates</div><div class="lsub">When you publish a new OneGit release on GitHub, the update APK is downloaded to your Downloads folder automatically.</div></div>' +
+  html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">Auto-download app updates</div><div class="lsub">When you publish a new Gitly release on GitHub, the update APK is downloaded to your Downloads folder automatically.</div></div>' +
     '<button class="switch' + (LS.get('autodl', false) ? ' on' : '') + '" id="autodlSw" aria-label="auto download updates"></button></div>' +
     '<div style="display:flex;gap:10px;align-items:center;padding:12px 0 2px;margin-top:12px;border-top:1px solid var(--divider)">' +
     '<div class="lmain" style="flex:1"><div class="ltitle">Installed</div><div class="lsub">Version ' + APPV + '</div></div>' +
@@ -1803,7 +2327,7 @@ function renderSettings() {
   html += '<div class="card"><div class="setrow"><div class="lmain"><div class="ltitle">GitHub activity alerts</div><div class="lsub">System notifications for new issues, pull requests, mentions, reviews, releases and CI results on repos you watch or participate in. Checked in the background roughly every 15 minutes — works even when the app is closed.</div></div>' +
     '<button class="switch' + (LS.get('notify', true) ? ' on' : '') + '" id="notifSw" aria-label="notifications"></button></div></div>';
   html += '<h2 class="sect">Sync across devices</h2>';
-  html += '<div class="card"><p style="margin:0;font-size:13.5px;color:var(--text2);line-height:1.6">Sign in with the same GitHub account on any device and OneGit pulls your data from GitHub. Your pins, theme and preferences are also saved to a private Gist in your account, so a new device picks up where you left off. Your access token stays on this device only — it is never synced.</p>' +
+  html += '<div class="card"><p style="margin:0;font-size:13.5px;color:var(--text2);line-height:1.6">Sign in with the same GitHub account on any device and Gitly pulls your data from GitHub. Your pins, theme and preferences are also saved to a private Gist in your account, so a new device picks up where you left off. Your access token stays on this device only — it is never synced.</p>' +
     '<div class="btncol"><button class="btn primary" data-act="synctoast">Sync now</button><button class="btn ghost" data-act="syncrestore">Restore from GitHub</button></div>' +
     '<div class="syncstat" id="syncStat">' + (gistId ? 'Linked to a private Gist in your account' : 'No sync Gist yet — one is created on your first sync') + '</div></div>';
   html += '<h2 class="sect">Pinned repositories</h2>';
@@ -1815,7 +2339,15 @@ function renderSettings() {
     html += '</div>';
   } else html += '<div class="card empty">Nothing pinned yet.</div>';
   html += '<h2 class="sect">Account</h2>';
-  html += '<div class="card"><button class="btn danger btnblock" id="logoutBtn">Sign out</button></div>';
+  const accs = getAccounts();
+  if (accs.length) {
+    html += '<div class="card list">' + accs.map(a =>
+      '<div class="lrow" data-swacc="' + esc(a.login) + '">' +
+      (a.avatar ? '<img src="' + esc(a.avatar) + '" alt="" style="width:34px;height:34px;border-radius:50%;flex-shrink:0">' : '') +
+      '<div class="lmain"><div class="ltitle">' + esc(a.login) + '</div><div class="lsub">' + (a.token === TOKEN ? 'Currently active' : 'Tap to switch to this account') + '</div></div>' +
+      (a.token === TOKEN ? '<span class="chip ok">Active</span>' : '') + '</div>').join('') + '</div>';
+  }
+  html += '<div style="display:flex;gap:8px"><button class="btn ghost" id="addAccBtn" style="flex:1">Add account</button><button class="btn danger" id="logoutBtn" style="flex:1">Sign out</button></div>';
   if (seq !== RSEQ) return;
   view().innerHTML = html;
   wireTabs();
@@ -1885,6 +2417,9 @@ function renderSettings() {
     }).catch(() => { if (latestEl.isConnected) latestEl.textContent = 'check failed'; });
   }
   $('#logoutBtn').addEventListener('click', () => doLogout('Signed out'));
+  $$('[data-swacc]').forEach(r => r.addEventListener('click', () => switchAccount(r.dataset.swacc)));
+  const aab = $('#addAccBtn');
+  if (aab) aab.addEventListener('click', () => { showLogin(); $('#tokenInput').value = ''; });
   const notifSw = $('#notifSw');
   if (notifSw) notifSw.addEventListener('click', () => {
     const on = !notifSw.classList.contains('on');
@@ -1939,7 +2474,13 @@ const ACTIONS = {
       }
     } catch (e) { closeSheet(); toast('Cannot open this file'); }
   },
-  relup: el => { window._relTarget = el.dataset.relup; const inp = $('#relUpInput'); if (inp) inp.click(); },
+  relup: el => {
+    const rid = el.dataset.relup, rf = el.dataset.full;
+    if (window.OneGit && window.OneGit.pickAssets && rf) {
+      try { toast('Choose files to attach'); window._assetAfter = () => route(); window.OneGit.pickAssets(rf, rid); return; } catch (e) {}
+    }
+    window._relTarget = rid; const inp = $('#relUpInput'); if (inp) inp.click();
+  },
   delasset: el => { deleteAssetSheet(el.dataset.full, el.dataset.aid, el.dataset.aname); },
   renasset: el => { renameAssetSheet(el.dataset.full, el.dataset.aid, el.dataset.aname); },
   closesheet: () => closeSheet(),
@@ -1999,10 +2540,13 @@ $('#loginBtn').addEventListener('click', async () => {
   const old = TOKEN; TOKEN = tok;
   try {
     USER = await api('/user');
+    const rec = addAccount(USER.login, tok, USER.avatar_url || '');
+    gistId = rec.gistId || null; LS.set('gistId', gistId);
     LS.set('token', tok);
     try { if (window.OneGit && window.OneGit.saveToken) window.OneGit.saveToken(tok); } catch (e) {}
     try { if (window.OneGit && window.OneGit.setNotifications) window.OneGit.setNotifications(LS.get('notify', true)); } catch (e) {}
     const restored = await syncRestore(true);
+    saveGistToAccount();
     if (location.hash === '#/home' || location.hash === '') route();
     else location.hash = '#/home';
     toast(restored ? 'Welcome back — data restored from GitHub' : 'Welcome, ' + USER.login);
@@ -2015,6 +2559,60 @@ $('#loginBtn').addEventListener('click', async () => {
 });
 $('#tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#loginBtn').click(); });
 window.addEventListener('hashchange', route);
+window.addEventListener('resize', fitBigTitle);
+
+/* ================= profile README (special repo) ================= */
+function specialRepoGo(login) {
+  return LS.get('spr:' + login, false) ? '#/profile/' + login : '#/user/' + login;
+}
+function checkSpecialRepo(login) {
+  api('/repos/' + login + '/' + login, { status: true }).then(r => {
+    const has = !!(r && r.ok && r.data);
+    if (LS.get('spr:' + login, false) !== has) {
+      LS.set('spr:' + login, has);
+      const card = view() && view().querySelector('.card.profile');
+      if (card) card.dataset.go = has ? '#/profile/' + login : '#/user/' + login;
+    }
+  }).catch(() => {});
+}
+
+/* ================= github.com deep links ================= */
+window.openGithubUrl = function (raw) {
+  let u;
+  try { u = new URL(String(raw)); } catch (e) { return false; }
+  const host = (u.hostname || '').toLowerCase();
+  const land = () => { try { toast('Opened in Gitly'); } catch (e) {} };
+  if (host === 'gist.github.com') {
+    const m = (u.pathname || '').match(/^\/(?:[^\/]+\/)?([0-9a-f]{6,})/i);
+    if (m) { location.hash = '#/gist/' + m[1]; land(); return true; }
+    return false;
+  }
+  if (host !== 'github.com' && host !== 'www.github.com' && host !== 'm.github.com') return false;
+  const seg = (u.pathname || '').split('/').filter(Boolean);
+  if (!seg.length) { location.hash = '#/home'; land(); return true; }
+  const noScreen = { notifications: 1, settings: 1, login: 1, join: 1, orgs: 1, topics: 1, explore: 1, marketplace: 1, new: 1, trending: 1, collections: 1, events: 1, pricing: 1, security: 1, features: 1, enterprise: 1, about: 1, pulls: 1, dashboard: 1, apps: 1, sponsors: 1, mobile: 1, feed: 1, site: 1 };
+  if (noScreen[String(seg[0]).toLowerCase()] && seg.length === 1) return false;
+  if (seg.length === 1) { location.hash = '#/user/' + seg[0]; land(); return true; }
+  const full = seg[0] + '/' + seg[1];
+  const rest = seg.slice(2);
+  if (!rest.length) { location.hash = '#/repo/' + full; land(); return true; }
+  const k = String(rest[0]).toLowerCase();
+  if (k === 'commit' && rest[1]) { location.hash = '#/commit/' + full + '/' + rest[1]; land(); return true; }
+  if (k === 'commits') { location.hash = '#/repo/' + full + '/commits'; land(); return true; }
+  if (k === 'releases' || k === 'tags') { location.hash = '#/repo/' + full + '/releases'; land(); return true; }
+  if ((k === 'issues' || k === 'pull') && /^\d+$/.test(rest[1] || '')) { location.hash = '#/issue/' + full + '/' + rest[1]; land(); return true; }
+  if (k === 'issues') { location.hash = '#/repo/' + full + '/issues'; land(); return true; }
+  if (k === 'pulls') { location.hash = '#/issues'; land(); return true; }
+  if (k === 'tree' || k === 'blob') {
+    let parts = rest.slice(2);
+    if (k === 'blob' && parts.length) parts = parts.slice(0, -1); // blob points at a file - open its folder
+    const p = parts.join('/');
+    location.hash = '#/repo/' + full + '/files' + (p ? '/' + p : '');
+    land();
+    return true;
+  }
+  location.hash = '#/repo/' + full; land(); return true;
+};
 
 /* ================= boot ================= */
 applyTheme();

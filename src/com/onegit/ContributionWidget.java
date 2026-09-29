@@ -234,7 +234,7 @@ public class ContributionWidget extends AppWidgetProvider {
         c.setRequestMethod("POST");
         c.setRequestProperty("Authorization", "Bearer " + token);
         c.setRequestProperty("Content-Type", "application/json");
-        c.setRequestProperty("User-Agent", "OneGit");
+        c.setRequestProperty("User-Agent", "Gitly");
         c.setDoOutput(true);
         c.getOutputStream().write(q.getBytes("UTF-8"));
         InputStream in = c.getInputStream();

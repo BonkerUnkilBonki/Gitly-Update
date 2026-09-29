@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build OneGit.apk without Gradle: aapt2 + javac + d8 + zipalign + apksigner
+# Build Gitly.apk without Gradle: aapt2 + javac + d8 + zipalign + apksigner
 set -e
 . /scratch/work/android-sdk/env.sh
 ulimit -v unlimited 2>/dev/null || true
@@ -44,8 +44,8 @@ if [ ! -f "$P/debug.keystore" ]; then
     -validity 10000 -dname "CN=OneGit Debug,O=OneGit,C=IN" >/dev/null 2>&1
 fi
 "$BT/apksigner" sign --ks "$P/debug.keystore" --ks-pass pass:android \
-  --out "$P/OneGit.apk" "$B/app.aligned.apk"
+  --out "$P/Gitly.apk" "$B/app.aligned.apk"
 
-"$BT/apksigner" verify --print-certs "$P/OneGit.apk" | head -3
+"$BT/apksigner" verify --print-certs "$P/Gitly.apk" | head -3
 echo "BUILD OK"
-ls -la "$P/OneGit.apk"
+ls -la "$P/Gitly.apk"

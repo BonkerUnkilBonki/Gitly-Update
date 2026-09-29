@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the OneGit launcher icon (blue One UI-style squircle with code chevrons)."""
+"""Generate the Gitly launcher icon (blue One UI-style squircle with code chevrons)."""
 import os
 from PIL import Image, ImageDraw
 

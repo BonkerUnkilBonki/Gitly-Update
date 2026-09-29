@@ -167,7 +167,7 @@ public class PollReceiver extends BroadcastReceiver {
         HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
         c.setRequestProperty("Authorization", "Bearer " + token);
         c.setRequestProperty("Accept", "application/vnd.github+json");
-        c.setRequestProperty("User-Agent", "OneGit");
+        c.setRequestProperty("User-Agent", "Gitly");
         InputStream in = c.getInputStream();
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         byte[] b = new byte[4096];

@@ -54,7 +54,7 @@ public class ProfileWidget extends AppWidgetProvider {
             if (token == null || token.isEmpty()) return;
             JSONObject u = new JSONObject(httpGet("https://api.github.com/user", token));
             String name = u.optString("name", "");
-            if (name.isEmpty()) name = u.optString("login", "OneGit");
+            if (name.isEmpty()) name = u.optString("login", "Gitly");
             v.setTextViewText(R.id.w_name, name);
             v.setTextViewText(R.id.w_login, "@" + u.optString("login", ""));
             v.setTextViewText(R.id.w_stats,
@@ -73,7 +73,7 @@ public class ProfileWidget extends AppWidgetProvider {
         HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
         c.setRequestProperty("Authorization", "Bearer " + token);
         c.setRequestProperty("Accept", "application/vnd.github+json");
-        c.setRequestProperty("User-Agent", "OneGit");
+        c.setRequestProperty("User-Agent", "Gitly");
         InputStream in = c.getInputStream();
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         byte[] b = new byte[4096];
@@ -86,7 +86,7 @@ public class ProfileWidget extends AppWidgetProvider {
     private static Bitmap httpImage(String u) {
         try {
             HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
-            c.setRequestProperty("User-Agent", "OneGit");
+            c.setRequestProperty("User-Agent", "Gitly");
             InputStream in = c.getInputStream();
             Bitmap b = BitmapFactory.decodeStream(in);
             in.close();

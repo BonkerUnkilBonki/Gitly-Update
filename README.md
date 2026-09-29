@@ -1,4 +1,246 @@
-# OneGit — a One UI-inspired GitHub client for Android
+## What's new in v2.60 - README images on every network
+- Repo-stored README images (welcome banners, stats SVGs) still
+  failed on some devices and networks, because they load from
+  raw.githubusercontent.com - which several ISPs block even while
+  the rest of GitHub works. Gitly now re-fetches those images
+  through api.github.com (the same authenticated channel every
+  other feature uses) and renders them from memory, so they work
+  on any network - private repositories included. If that fetch
+  ever fails, the direct URL remains as fallback. Applies to repo
+  READMEs, profile READMEs, issues and comments.
+
+## What's new in v2.59 - adaptive header titles
+- The big header title now scales itself down (34px to a 22px
+  floor) so long names like the Home greeting with your handle
+  fit on one line instead of breaking mid-word with a dangling
+  letter. Titles that still cannot fit wrap cleanly at word
+  boundaries, and the size re-fits on rotation.
+
+## What's new in v2.58 - header spacing
+- Page titles no longer sit flush against the back button (2px
+  gap -> 10px), subtitles get breathing room below the header
+  row, and the Profile README screen shows the @handle as a
+  proper big title instead of a cramped subtitle under the
+  back pill.
+
+## What's new in v2.57 - pill back buttons
+- The back buttons on every detail screen (big header and the
+  collapsed top bar) now sit in a frosted circular pill, matching
+  the bottom navigation bar - with proper light, dark and pitch
+  black variants.
+
+## What's new in v2.56 - cleaner Profile README header
+- The big "Profile README" title text no longer sits at the top of
+  the profile README screen - the header now shows just the
+  @handle. The small top bar still says Profile README while
+  scrolling, so you always know where you are.
+
+## What's new in v2.55 - fixed unreadable active-button text
+- With a light accent color (custom or dynamic Material You), the
+  Starred / Watching buttons on a repository and the active Follow
+  button showed white text on a light accent background - almost
+  invisible. They now use the accent-aware text color the rest of
+  the app already uses, switching to dark text on light accents.
+
+## What's new in v2.54 - fixed README images
+- Images stored inside a repository (welcome banners, stats SVGs,
+  screenshots - anything referenced with a relative path like
+  ./assets/banner.png) were broken in repo READMEs, profile
+  READMEs, issues and comments: they were resolved against
+  github.com itself instead of the repository, so every one of
+  them 404'd. Gitly now resolves them against the repository's
+  raw files, so they render everywhere. Links inside READMEs
+  now open the right file pages too, and in-page anchors no
+  longer get mangled.
+
+## What's new in v2.53 - fixed uploads into empty repositories
+- Uploading a folder to a repository with no commits failed with
+  "HTTP 409 - Git Repository is empty" for every file: GitHub's
+  Git Data API refuses to touch a repository that has no commits
+  yet. Gitly now bootstraps the repository first through the
+  Contents API (a tiny invisible marker commit), then chains the
+  real upload onto it and removes the marker again in the same
+  push - so an empty repo ends up with exactly the files you
+  uploaded, in one clean commit on top of the bootstrap.
+
+## What's new in v2.52 - big, complete folder uploads
+- Folder and multi-file uploads now run natively and stream every
+  file straight to GitHub: per-file limit lifted from 10 MB to
+  GitHub's own 100 MB max, and folders up to 2000 files (was 200).
+  A multi-GB folder of normal files now uploads fine.
+- Fixed files silently missing from folder uploads: one unreadable
+  file or subfolder used to abort the whole walk (res/ and src/
+  were dropped that way). Every file and subfolder is now isolated
+  - a failure is reported by name instead of eating the rest.
+- Upload files (multi-select) now lands everything in ONE commit,
+  same as folder uploads, and handles large files the same way.
+- Release assets now upload natively too - streamed, so assets up
+  to GitHub's 2 GB per-file limit work instead of dying on big
+  files.
+- Upload progress shows real per-file counts, and the final toast
+  says exactly how many made it and which files failed.
+
+## What's new in v2.51 - fixed Upload folder
+- The Upload folder button did nothing when tapped. A leftover counter
+  reset (removed variables) crashed the tap handler in strict-mode JS
+  before the folder picker could even open. Fixed: the handler now
+  runs cleanly and the system folder picker opens again.
+
+# Gitly — a One UI-inspired GitHub client for Android
+
+## What's new in v2.50 - empty repos, activity detail, readable text
+- New/empty repositories now show the Add file / Upload files /
+  Upload folder buttons right on the Files tab, and the first
+  upload works even with no commits yet
+- Repo overview: "No README found" now has a Create README button
+- Activity now shows full detail: every commit message in a
+  push (up to 4, then +N more), plus new event types - followed
+  users, open-sourced repos, wiki updates, collaborator added,
+  commit comments
+- Secondary text (repo names, times, activity lines) is much
+  brighter on dark and AMOLED themes, and darker on light theme
+
+## What's new in v2.49 - follow self-heals
+- If a follow/unfollow fails with "Not Found", the app now
+  re-checks who you are signed in as, fixes the button state
+  and explains: following yourself is not possible
+- Note: the follow guards from v2.47+ are all present; if you
+  still see a Follow button on your own profile, update the app
+  (check Settings > About shows the latest version)
+
+## What's new in v2.48 - rebranded to Gitly
+- The app is now called Gitly everywhere you can see it:
+  launcher name, login screen, About card, update popups,
+  widgets, notifications and downloads
+- Installs right over the previous build - same app, new name;
+  your account, pins, themes and settings are untouched
+
+## What's new in v2.47 - FIXED Follow button
+- Fix: tapping Follow navigated away instead of following -
+  clicks inside the profile card no longer leak to the card's
+  own tap action (same for Edit profile)
+- Fix: the Follow button could appear on your OWN profile when
+  the signed-in user wasn't known yet - GitHub then answered
+  "Not Found" (self-follow). It is now never shown for yourself
+- Extra guard: a follow request for yourself is blocked with a
+  clear message instead of an error
+- If the account behind the token changes, the screen re-renders
+  so the right buttons show
+
+## What's new in v2.46 - cleaner profile README + tappable stats
+- Tapping the profile card now opens a dedicated Profile README
+  screen: the user's header card plus their rendered README -
+  no repo page clutter (stats, clone, edit buttons are gone)
+- No special repo? The card still opens the normal profile
+- The repos / followers / following pills on Home are now
+  tappable: followers and following open the full list of
+  users with avatars, and tapping any of them opens that
+  person's profile
+
+## What's new in v2.45 - Discover search + diff wrap + home fixes
+- Discover tab now has a search bar - type to search all of
+  GitHub (sorts by stars); empty search shows trending repos
+- Diffs wrap instead of scrolling sideways - long lines fold
+  down, so code is never cut off or invisible
+- Stronger colors on diff lines (context text explicit,
+  add/del backgrounds brighter)
+- Home quicklinks row (Productivity / Discover / My profile)
+  no longer overflows the screen edge - buttons share the
+  row evenly
+- Added bottom padding so the last card is never hidden
+  under the navigation bar
+
+## What's new in v2.44 - Profile README support
+- Tapping the profile card (avatar / name / bio block) on Home
+  or on any profile opens that user's special repository - the
+  one named exactly like their username - if it exists
+- No special repo? The card opens the normal profile instead
+- Profile screens now render the user's Profile README below
+  their info, exactly like GitHub does, with images and markdown
+- The existence check is cached, so the card responds instantly
+
+## What's new in v2.43 - open GitHub links in Gitly
+- Gitly can now act as a handler for github.com links
+  (github.com, www/m.github.com, gist.github.com), like the
+  YouTube screenshots: enable via Android Settings > Apps >
+  Gitly > Set as default > Supported web addresses, or pick
+  "Always" in the link chooser
+- Deep links map straight to app screens: repo, user, commits,
+  commit detail (with view/revert), issues & PRs, releases,
+  file tree/folder, gists
+- Links the app has no screen for are left to the browser
+
+## What's new in v2.42 - custom commit messages everywhere
+- Delete file now also asks for a commit message (pre-filled
+  "Delete <name>") - the last flow that used a fixed title
+- Every commit-creating flow now supports custom messages:
+  Upload files, Upload folder, Add file, Edit file, Delete file
+
+## What's new in v2.41 - Issues moved to the Home card
+- Bottom navigation is now Home / Repos / Commits (3 tabs)
+- Issues lives on the Home profile card: a round icon button
+  directly below the notification bell, same style and tap area
+- The Issues screen itself is unchanged (tap the icon to open)
+
+## What's new in v2.40 — FIXED commit view/delete + Commits tab + long-press
+- FIX: tapping a commit in a repo's Commits list did nothing useful
+  (it went to Repos) because GitHub's list API gives no repository
+  URL - rows now carry the repo, so taps open the commit properly,
+  and Revert/Rollback/view-file are all reachable
+- NEW: "Commits" tab in the bottom navigation - your recent commits
+  across every repository you own, with repo name, message, time
+  and short SHA (loaded via GraphQL, cached for instant paint)
+- NEW: long-press any commit row (Commits tab or a repo's commits
+  list) to get options: View commit, Revert changes, Rollback
+- Tap still opens the commit detail; long-press only opens options
+
+## What's new in v2.39 — commit file viewer + custom commit messages
+- Tap a changed file's name bar in any commit to open the full
+  file content AT THAT COMMIT (GitHub-style "view file"), with
+  File / Changes tabs — Changes shows the complete diff (not
+  just the first 400 lines)
+- Binary/too-large files get a Download button in the viewer
+- Upload files / Upload folder now ask for a commit message
+  first, in a small sheet with a sensible default pre-filled
+- Cancel in that sheet stops the upload before anything commits
+
+## What's new in v2.38 — undo commits (revert + rollback)
+- Every commit detail screen now has two actions: Revert changes
+  and Rollback (next to the additions/deletions stats)
+- Revert creates a NEW commit that restores the state every file
+  had before that commit — history stays intact
+- Rollback permanently removes that commit AND every commit made
+  after it from the default branch (confirm sheet shows how many)
+- Rollback is only offered when the commit is on the default
+  branch; a safety check runs first
+- Uses the Git Data API (trees/commits/refs) since GitHub REST
+  has no revert endpoint
+
+## What's new in v2.37 — commit counters on the Commits screen
+- A stats card at the top of a repo's Commits screen shows the
+  TOTAL number of commits on the default branch and how many
+  commits were made TODAY, fetched in parallel with the list
+- Counts come from GitHub's Link header, so they are exact even
+  for repos with thousands of commits
+
+## What's new in v2.36 — folder uploads are a single commit
+- Uploading a folder (or several files at once) now lands as ONE
+  commit on the default branch instead of one commit per file,
+  using GitHub's Git Data API (blobs -> tree -> commit)
+- The progress card now shows "N files found" while scanning and
+  "Committing x / y" while the single commit is assembled
+
+## What's new in v2.35 — multiple GitHub accounts
+- Add any number of GitHub accounts and switch between them from
+  Settings > Account. Each account shows its avatar and login, with
+  the active one marked
+- Switching swaps the token everywhere (widgets, background
+  notifications), clears the other account's cached data, and loads
+  that account's pins and sync Gist - each account syncs separately
+- "Add account" opens the sign-in screen with a Cancel button when
+  you are already signed in
+- Sign out removes the current account from the device and switches
+  to the next one; if none remain, you land on the sign-in screen
 
 ## What's new in v2.34 — upload progress and notifications
 - Uploads now show a live progress card with the current file, a
@@ -65,7 +307,7 @@
   confirmation step
 
 ## What's new in v2.26 — fixed release asset uploads
-- Fixed "Failed: OneGit.apk - Failed to fetch" when uploading files to
+- Fixed "Failed: Gitly.apk - Failed to fetch" when uploading files to
   a release: uploads.github.com does not send CORS headers, so the
   WebView blocked the upload. Release assets now upload through the
   native layer (no CORS restrictions) on a background thread, with the
@@ -79,7 +321,7 @@
 
 ## What's new in v2.24 — app update system
 - New "Auto-download app updates" toggle in Settings: when you
-  publish a new release on github.com/BonkerUnkilBonki/OneGit, the
+  publish a new release on github.com/BonkerUnkilBonki/Gitly, the
   app detects it and downloads the update APK to your Downloads
   folder automatically (once per release)
 - Update popup on the Home tab: when a newer release exists, a card
@@ -109,6 +351,133 @@
   original page loading (spinner while fetching). All v2.22 changes
   are reverted.
 
+## What's new in v2.47 - FIXED Follow button
+- Fix: tapping Follow navigated away instead of following -
+  clicks inside the profile card no longer leak to the card's
+  own tap action (same for Edit profile)
+- Fix: the Follow button could appear on your OWN profile when
+  the signed-in user wasn't known yet - GitHub then answered
+  "Not Found" (self-follow). It is now never shown for yourself
+- Extra guard: a follow request for yourself is blocked with a
+  clear message instead of an error
+- If the account behind the token changes, the screen re-renders
+  so the right buttons show
+
+## What's new in v2.46 - cleaner profile README + tappable stats
+- Tapping the profile card now opens a dedicated Profile README
+  screen: the user's header card plus their rendered README -
+  no repo page clutter (stats, clone, edit buttons are gone)
+- No special repo? The card still opens the normal profile
+- The repos / followers / following pills on Home are now
+  tappable: followers and following open the full list of
+  users with avatars, and tapping any of them opens that
+  person's profile
+
+## What's new in v2.45 - Discover search + diff wrap + home fixes
+- Discover tab now has a search bar - type to search all of
+  GitHub (sorts by stars); empty search shows trending repos
+- Diffs wrap instead of scrolling sideways - long lines fold
+  down, so code is never cut off or invisible
+- Stronger colors on diff lines (context text explicit,
+  add/del backgrounds brighter)
+- Home quicklinks row (Productivity / Discover / My profile)
+  no longer overflows the screen edge - buttons share the
+  row evenly
+- Added bottom padding so the last card is never hidden
+  under the navigation bar
+
+## What's new in v2.44 - Profile README support
+- Tapping the profile card (avatar / name / bio block) on Home
+  or on any profile opens that user's special repository - the
+  one named exactly like their username - if it exists
+- No special repo? The card opens the normal profile instead
+- Profile screens now render the user's Profile README below
+  their info, exactly like GitHub does, with images and markdown
+- The existence check is cached, so the card responds instantly
+
+## What's new in v2.43 - open GitHub links in Gitly
+- Gitly can now act as a handler for github.com links
+  (github.com, www/m.github.com, gist.github.com), like the
+  YouTube screenshots: enable via Android Settings > Apps >
+  Gitly > Set as default > Supported web addresses, or pick
+  "Always" in the link chooser
+- Deep links map straight to app screens: repo, user, commits,
+  commit detail (with view/revert), issues & PRs, releases,
+  file tree/folder, gists
+- Links the app has no screen for are left to the browser
+
+## What's new in v2.42 - custom commit messages everywhere
+- Delete file now also asks for a commit message (pre-filled
+  "Delete <name>") - the last flow that used a fixed title
+- Every commit-creating flow now supports custom messages:
+  Upload files, Upload folder, Add file, Edit file, Delete file
+
+## What's new in v2.41 - Issues moved to the Home card
+- Bottom navigation is now Home / Repos / Commits (3 tabs)
+- Issues lives on the Home profile card: a round icon button
+  directly below the notification bell, same style and tap area
+- The Issues screen itself is unchanged (tap the icon to open)
+
+## What's new in v2.40 — FIXED commit view/delete + Commits tab + long-press
+- FIX: tapping a commit in a repo's Commits list did nothing useful
+  (it went to Repos) because GitHub's list API gives no repository
+  URL - rows now carry the repo, so taps open the commit properly,
+  and Revert/Rollback/view-file are all reachable
+- NEW: "Commits" tab in the bottom navigation - your recent commits
+  across every repository you own, with repo name, message, time
+  and short SHA (loaded via GraphQL, cached for instant paint)
+- NEW: long-press any commit row (Commits tab or a repo's commits
+  list) to get options: View commit, Revert changes, Rollback
+- Tap still opens the commit detail; long-press only opens options
+
+## What's new in v2.39 — commit file viewer + custom commit messages
+- Tap a changed file's name bar in any commit to open the full
+  file content AT THAT COMMIT (GitHub-style "view file"), with
+  File / Changes tabs — Changes shows the complete diff (not
+  just the first 400 lines)
+- Binary/too-large files get a Download button in the viewer
+- Upload files / Upload folder now ask for a commit message
+  first, in a small sheet with a sensible default pre-filled
+- Cancel in that sheet stops the upload before anything commits
+
+## What's new in v2.38 — undo commits (revert + rollback)
+- Every commit detail screen now has two actions: Revert changes
+  and Rollback (next to the additions/deletions stats)
+- Revert creates a NEW commit that restores the state every file
+  had before that commit — history stays intact
+- Rollback permanently removes that commit AND every commit made
+  after it from the default branch (confirm sheet shows how many)
+- Rollback is only offered when the commit is on the default
+  branch; a safety check runs first
+- Uses the Git Data API (trees/commits/refs) since GitHub REST
+  has no revert endpoint
+
+## What's new in v2.37 — commit counters on the Commits screen
+- A stats card at the top of a repo's Commits screen shows the
+  TOTAL number of commits on the default branch and how many
+  commits were made TODAY, fetched in parallel with the list
+- Counts come from GitHub's Link header, so they are exact even
+  for repos with thousands of commits
+
+## What's new in v2.36 — folder uploads are a single commit
+- Uploading a folder (or several files at once) now lands as ONE
+  commit on the default branch instead of one commit per file,
+  using GitHub's Git Data API (blobs -> tree -> commit)
+- The progress card now shows "N files found" while scanning and
+  "Committing x / y" while the single commit is assembled
+
+## What's new in v2.35 — multiple GitHub accounts
+- Add any number of GitHub accounts and switch between them from
+  Settings > Account. Each account shows its avatar and login, with
+  the active one marked
+- Switching swaps the token everywhere (widgets, background
+  notifications), clears the other account's cached data, and loads
+  that account's pins and sync Gist - each account syncs separately
+- "Add account" opens the sign-in screen with a Cancel button when
+  you are already signed in
+- Sign out removes the current account from the device and switches
+  to the next one; if none remain, you land on the sign-in screen
+
 ## What's new in v2.34 — upload progress and notifications
 - Uploads now show a live progress card with the current file, a
   "done / total" count and an accent progress bar (folder upload and
@@ -174,7 +543,7 @@
   confirmation step
 
 ## What's new in v2.26 — fixed release asset uploads
-- Fixed "Failed: OneGit.apk - Failed to fetch" when uploading files to
+- Fixed "Failed: Gitly.apk - Failed to fetch" when uploading files to
   a release: uploads.github.com does not send CORS headers, so the
   WebView blocked the upload. Release assets now upload through the
   native layer (no CORS restrictions) on a background thread, with the
@@ -188,7 +557,7 @@
 
 ## What's new in v2.24 — app update system
 - New "Auto-download app updates" toggle in Settings: when you
-  publish a new release on github.com/BonkerUnkilBonki/OneGit, the
+  publish a new release on github.com/BonkerUnkilBonki/Gitly, the
   app detects it and downloads the update APK to your Downloads
   folder automatically (once per release)
 - Update popup on the Home tab: when a newer release exists, a card
@@ -378,7 +747,7 @@
   (with a small haptic buzz); a normal tap still opens the file
 
 ## What's new in v2.5 — credits page polish
-- The OneGit logo (yes, the cat) now sits at the top of the Credits
+- The Gitly logo (yes, the cat) now sits at the top of the Credits
   tab in Settings, rounded to match the card design with an accent
   glow
 - Version info is now a proper bullet list, one item per line:
@@ -410,7 +779,7 @@
 
 ## What's new in v2.2
 - Removed the "Your GitHub, the One UI way" tagline from the home header
-- Auto-sync on open: OneGit quietly restores your synced preferences
+- Auto-sync on open: Gitly quietly restores your synced preferences
   from your private Gist in the background every time the app opens —
   no waiting, the app is usable instantly
 - On-device data cache: your profile and the Recent activity feed are
@@ -449,7 +818,7 @@
   matching pressed/glow shades derived automatically
 - Font options: System (default), App default, or Custom TTF —
   import any .ttf/.otf from your device (up to 4 MB) via the native
-  file picker and OneGit renders its entire UI in your font
+  file picker and Gitly renders its entire UI in your font
 - Custom color and font preference sync across devices (the font file
   itself stays on the device that imported it)
 
@@ -466,7 +835,7 @@
 ## What's new in v1.6
 - Contributions 4x2 wide widget: full-year heatmap plus best day, streak
   and yearly total, sized for a 4x2 slot
-- Background GitHub activity notifications: OneGit now checks GitHub
+- Background GitHub activity notifications: Gitly now checks GitHub
   roughly every 15 minutes (even when closed) and posts system
   notifications for new issues, PRs, mentions, reviews, releases and CI
   results on repos you watch or participate in
@@ -476,7 +845,7 @@
   - Tapping a notification opens the Alerts tab
 
 ## What's new in v1.5
-- Contribution activity widgets (long-press home screen > Widgets > OneGit):
+- Contribution activity widgets (long-press home screen > Widgets > Gitly):
   - Contributions 2x2: compact full-year heatmap
   - Contributions 4x4: full-year heatmap plus best day, current streak
     and yearly total
@@ -484,12 +853,12 @@
   (empty -> bright), today's cell ringed
 - Live data via GitHub GraphQL using your saved token; refreshes every
   30 minutes and every time you open the app
-- All four OneGit widgets now: Profile, Quick, Contributions 2x2, 4x4
+- All four Gitly widgets now: Profile, Quick, Contributions 2x2, 4x4
 
 ## What's new in v1.4
-- Home screen widgets (long-press your launcher > Widgets > OneGit):
-  - OneGit Profile: avatar, name and repo/follower stats, refreshed live
-  - OneGit Quick: Home / Repos / Issues / Alerts launch pills
+- Home screen widgets (long-press your launcher > Widgets > Gitly):
+  - Gitly Profile: avatar, name and repo/follower stats, refreshed live
+  - Gitly Quick: Home / Repos / Issues / Alerts launch pills
 - Releases: view every release with notes, assets (size + download count),
   and one-tap in-app downloads via Android DownloadManager — plus
   Source code (zip / tar.gz) for every tag
@@ -533,24 +902,24 @@
   buttons/nav/toasts, star pin pop, sheet slide-up, refresh button
 - Status and navigation bar colors follow the selected theme natively
 
-OneGit is a lightweight GitHub client wrapped in a Samsung One UI-style interface:
+Gitly is a lightweight GitHub client wrapped in a Samsung One UI-style interface:
 big collapsing titles, floating pill bottom navigation, rounded cards, segmented
 controls, pill buttons and a dark mode with the One UI dark palette.
 
 ## The APK
 
-`OneGit.apk` — install it on any Android 7.0+ (API 24) device. It is signed with
+`Gitly.apk` — install it on any Android 7.0+ (API 24) device. It is signed with
 the included debug keystore, so future builds signed with the same key will
 install as updates over this one.
 
 ## Signing in
 
-OneGit connects to GitHub with a personal access token (the same idea as the
+Gitly connects to GitHub with a personal access token (the same idea as the
 official GitHub CLI or third-party clients):
 
 1. In the app, tap "Create a token with the right scopes" (or visit
-   https://github.com/settings/tokens/new?scopes=repo,read:user,notifications,gist&description=OneGit).
-2. Generate the token and paste it into OneGit.
+   https://github.com/settings/tokens/new?scopes=repo,read:user,notifications,gist&description=Gitly).
+2. Generate the token and paste it into Gitly.
 
 Scopes used: `repo`, `read:user`, `notifications`, `gist`.
 The token is stored only on your device (localStorage inside the app).
@@ -594,7 +963,7 @@ The build script uses only Android build-tools + a JDK (no Gradle):
     # platform android-34 in  $SDK/platforms/android-34/android.jar
     # JDK 17 on PATH
 
-    bash build.sh          # produces OneGit.apk
+    bash build.sh          # produces Gitly.apk
 
 Icons can be regenerated with `python3 gen_icon.py`.
 

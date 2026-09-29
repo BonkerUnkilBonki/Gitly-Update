@@ -7,7 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
 
-/** Home screen widget: quick launch pills into OneGit tabs. */
+/** Home screen widget: quick launch pills into Gitly tabs. */
 public class QuickWidget extends AppWidgetProvider {
 
     @Override
